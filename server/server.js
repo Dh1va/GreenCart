@@ -21,7 +21,7 @@ await connectDB();
 await connectCloudinary();
 
 // Allowed origins for CORS
-const allowedOrgins = ['http://localhost:5173'];
+const allowedOrgins = ['http://localhost:5173', 'https://green-cart-silk-sigma.vercel.app'];
 
 //middleware config
 app.use(express.json());

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
-import { assets, dummyAddress } from "../assets/assets";
+import { assets } from "../assets/assets";
 import toast from "react-hot-toast";
 
 const Cart = () => {
@@ -13,168 +13,57 @@ const Cart = () => {
     navigate,
     getCartAmount,
     cartItems,
-    setCartItems,
-    axios,
     user,
+    setShowUserLogin,
+    setRedirectAfterLogin,
   } = useAppContext();
 
   const [cartArray, setCartArray] = useState([]);
-  const [addresses, setAddresses] = useState([]);
-  const [showAddress, setShowAddress] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState(null);
-  const [paymentOption, setPaymentOption] = useState("COD");
 
   const getCart = () => {
     let tempArray = [];
     for (const key in cartItems) {
       const product = products.find((item) => item._id === key);
       if (product) {
-        // ✅ only if product exists
-        product.quantity = cartItems[key];
-        tempArray.push(product);
+        tempArray.push({
+          ...product,
+          quantity: cartItems[key],
+        });
       }
     }
     setCartArray(tempArray);
   };
 
-  const getUserAddress = async () => {
-    try {
-      const { data } = await axios.get("/api/address/get");
-      if (data.success) {
-        setAddresses(data.addresses);
-        if (data.addresses.length > 0) {
-          setSelectedAddress(data.addresses[0]);
-        }
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      toast.error(error.message);
-    }
-  };
-
-const placeOrder = async () => {
-  try {
-    if (!selectedAddress) {
-      toast.error("Please select an address");
-      return;
-    }
-
-    // ✅ ALWAYS use this one variable name
-    const itemsPayload = cartArray.map((item) => ({
-      product: item._id,
-      quantity: item.quantity,
-    }));
-
-    if (itemsPayload.length === 0) {
-      toast.error("Your cart is empty");
-      return;
-    }
-
-    // ---- COD FLOW ----
-    if (paymentOption === "COD") {
-      const { data } = await axios.post("/api/order/cod", {
-        userId: user._id,
-        items: itemsPayload,              // ✅ use itemsPayload here
-        address: selectedAddress._id,
-      });
-
-      if (data.success) {
-        toast.success(data.message);
-        setCartItems({});
-        navigate("/my-orders");
-      } else {
-        toast.error(data.message);
-      }
-      return;
-    }
-
-    // ---- ONLINE (RAZORPAY) FLOW ----
-    if (paymentOption === "Online") {
-      // 1) Create Razorpay order on backend
-      const { data } = await axios.post("/api/order/razorpay/order", {
-        items: itemsPayload,              // ✅ use itemsPayload here
-        addressId: selectedAddress._id,
-      });
-
-      if (!data.success) {
-        toast.error(data.message || "Failed to create payment order");
-        return;
-      }
-
-      const { order, key, amount } = data;
-
-      const options = {
-        key,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Your Store Name",
-        description: "Order Payment",
-        order_id: order.id,
-        prefill: {
-          name: user?.name || "",
-          email: user?.email || "",
-          contact: user?.phone || "",
-        },
-        handler: async function (response) {
-          try {
-            const verifyRes = await axios.post("/api/order/razorpay/verify", {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              items: itemsPayload,        // ✅ same itemsPayload again
-              addressId: selectedAddress._id,
-            });
-
-            if (verifyRes.data.success) {
-              toast.success("Payment successful");
-              setCartItems({});
-              navigate("/my-orders");
-            } else {
-              toast.error(
-                verifyRes.data.message || "Payment verification failed"
-              );
-            }
-          } catch (err) {
-            console.error(err);
-            toast.error(err.message);
-          }
-        },
-        theme: {
-          color: "#3399cc",
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    }
-  } catch (error) {
-    console.error(error);
-    toast.error(error.message);
-  }
-};
-
-
   useEffect(() => {
-    if (products.length > 0 && cartItems) getCart();
+    if (products.length > 0) getCart();
   }, [products, cartItems]);
 
-  useEffect(() => {
-    if (user) {
-      getUserAddress();
+  const handleCheckout = () => {
+    if (!user) {
+      toast.error("Please login to continue");
+      setRedirectAfterLogin("/checkout");
+      setShowUserLogin(true);
+      return;
     }
-  }, [user]);
+    navigate("/checkout");
+  };
 
-  return products.length > 0 && cartItems ? (
-    <div className="flex flex-col md:flex-row py-16 mt-16">
+  const taxAmount = (getCartAmount() * 2) / 100;
+  const totalAmount = getCartAmount() + taxAmount;
+
+  return products.length > 0 ? (
+    <div className="flex flex-col md:flex-row py-16 mt-16 gap-10">
+      {/* LEFT – CART ITEMS */}
       <div className="flex-1 max-w-4xl">
         <h1 className="text-3xl font-medium mb-6">
           Shopping Cart{" "}
-          <span className="text-sm text-primary">{getCartCount()} Items</span>
+          <span className="text-sm text-primary">
+            {getCartCount()} Items
+          </span>
         </h1>
 
         <div className="grid grid-cols-[2fr_1fr_1fr] text-gray-500 text-base font-medium pb-3">
-          <p className="text-left">Product Details</p>
+          <p>Product Details</p>
           <p className="text-center">Subtotal</p>
           <p className="text-center">Action</p>
         </div>
@@ -182,46 +71,44 @@ const placeOrder = async () => {
         {cartArray.map((product, index) => (
           <div
             key={index}
-            className="grid grid-cols-[2fr_1fr_1fr] text-gray-500 items-center text-sm md:text-base font-medium pt-3"
+            className="grid grid-cols-[2fr_1fr_1fr] items-center text-sm md:text-base pt-4"
           >
-            <div className="flex items-center md:gap-6 gap-3">
+            <div className="flex items-center gap-4">
               <div
-                onClick={() => {
+                onClick={() =>
                   navigate(
                     `/products/${product.category.toLowerCase()}/${product._id}`
-                  );
-                  scrollTo(0, 0);
-                }}
-                className="cursor-pointer w-24 h-24 flex items-center justify-center border border-gray-300 rounded"
+                  )
+                }
+                className="cursor-pointer w-24 h-24 border rounded flex items-center justify-center"
               >
                 <img
-                  className="max-w-full h-full object-cover"
                   src={product.images[0]}
                   alt={product.name}
+                  className="object-cover h-full"
                 />
               </div>
+
               <div>
-                <p className="hidden md:block font-semibold">{product.name}</p>
-                <div className="font-normal text-gray-500/70">
-                  <p>
-                    weight: <span>{product.weight || "N/A"}</span>
-                  </p>
-                  <div className="flex items-center">
-                    <p>Qty:</p>
+                <p className="font-semibold">{product.name}</p>
+                <div className="text-gray-500 text-sm">
+                  <div className="flex items-center gap-1">
+                    <span>Qty:</span>
                     <select
-                      onChange={(e) => {
-                        updateCartItem(product._id, Number(e.target.value));
-                      }}
-                      value={cartItems[product._id]}
+                      value={product.quantity}
+                      onChange={(e) =>
+                        updateCartItem(
+                          product._id,
+                          Number(e.target.value)
+                        )
+                      }
                       className="outline-none cursor-pointer"
                     >
-                      {Array(
-                        cartItems[product._id] > 9 ? cartItems[product._id] : 9
-                      )
+                      {Array(9)
                         .fill("")
-                        .map((_, index) => (
-                          <option key={index} value={index + 1}>
-                            {index + 1}
+                        .map((_, i) => (
+                          <option key={i} value={i + 1}>
+                            {i + 1}
                           </option>
                         ))}
                     </select>
@@ -229,163 +116,47 @@ const placeOrder = async () => {
                 </div>
               </div>
             </div>
+
             <p className="text-center">
               {currency}
               {product.offerPrice * product.quantity}
             </p>
+
             <button
               onClick={() => removeFromCart(product._id)}
-              className="cursor-pointer mx-auto"
+              className="mx-auto"
             >
               <img
                 src={assets.remove_icon}
                 alt="remove"
-                className="inline-block w-6 h-6"
+                className="w-6"
               />
             </button>
           </div>
         ))}
 
         <button
-          onClick={() => {
-            navigate("/products");
-            scrollTo(0, 0);
-          }}
-          className="group cursor-pointer flex items-center mt-8 gap-2 text-primary font-medium"
+          onClick={() => navigate("/products")}
+          className="flex items-center gap-2 mt-8 text-primary font-medium"
         >
           <img
             src={assets.arrow_right_icon_colored}
             alt="arrow"
-            className="group-hover: -translate-x-1 transition"
+            className="-rotate-180"
           />
           Continue Shopping
         </button>
       </div>
 
-      {/* <div className="max-w-[360px] w-full bg-gray-100/40 p-5 max-md:mt-16 border border-gray-300/70">
-                <h2 className="text-xl md:text-xl font-medium">Order Summary</h2>
-                <hr className="border-gray-300 my-5" />
+      {/* RIGHT – PRICE SUMMARY */}
+      <div className="w-full max-w-[360px] bg-gray-100/40 p-5 border border-gray-300/70">
+        <h2 className="text-xl font-medium">Order Summary</h2>
+        <hr className="my-5 border-gray-300" />
 
-                <div className="mb-6">
-                    <p className="text-sm font-medium uppercase">Delivery Address</p>
-                    <div className="relative  items-start mt-2">
-                        <p className="text-gray-500">{selectedAddress ? `${selectedAddress.street},${selectedAddress.city},${selectedAddress.state},${selectedAddress.country}` : "No address found"}</p>
-                        <button onClick={() => setShowAddress(!showAddress)} className="text-primary hover:underline cursor-pointer mt-2">
-                            Change
-                        </button>
-                        {showAddress && (
-                            <div className="absolute top-12 py-1 bg-white border border-gray-300 text-sm w-full">
-                                {addresses.map((address,index)=>(
-                                    <p key={index} onClick={() => {
-                                        setSelectedAddress(address)
-                                        setShowAddress(false)}} 
-                                        className="text-gray-500 p-2 hover:bg-gray-100">
-                                        {address.street}, {address.city}, {address.state}, {address.country}
-                                </p>
-                                )) }
-                                <p onClick={() => navigate('/add-address')} className="text-primary text-center cursor-pointer p-2 hover:bg-indigo-500/10">
-                                    Add address
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    <p className="text-sm font-medium uppercase mt-6">Payment Method</p>
-
-                    <select onChange={(e)=>setPaymentOption(e.target.value)} className="w-full border border-gray-300 bg-white px-3 py-2 mt-2 outline-none">
-                        <option value="COD">Cash On Delivery</option>
-                        <option value="Online">Online Payment</option>
-                    </select>
-                </div>
-
-                <hr className="border-gray-300" />
-
-                <div className="text-gray-500 mt-4 space-y-2">
-                    <p className="flex justify-between">
-                        <span>Price</span><span>{currency}{getCartAmount()}</span>
-                    </p>
-                    <p className="flex justify-between">
-                        <span>Shipping Fee</span><span className="text-green-600">Free</span>
-                    </p>
-                    <p className="flex justify-between">
-                        <span>Tax (2%)</span><span>{currency}{getCartAmount() * 2 / 100}</span>
-                    </p>
-                    <p className="flex justify-between text-lg font-medium mt-3">
-                        <span>Total Amount:</span><span>{currency}{getCartAmount() + getCartAmount() * 2 / 100}</span>
-                    </p>
-                </div>
-
-                <button onClick={placeOrder} className="w-full py-3 mt-6 cursor-pointer bg-primary text-white font-medium hover:bg-primary-dull transition">
-                    {paymentOption === "COD" ? "Place Order" : "Proceed to Checkout"}
-                </button>
-            </div> */}
-      <div className="max-w-[360px] w-full bg-gray-100/40 p-5 max-md:mt-16 border border-gray-300/70">
-        <h2 className="text-xl md:text-xl font-medium">Order Summary</h2>
-        <hr className="border-gray-300 my-5" />
-
-        <div className="mb-6">
-          <p className="text-sm font-medium uppercase">Delivery Address</p>
-
-          {/* Wrap address + button in a relative container for dropdown */}
-          <div className="relative mt-2">
-            <p className="text-gray-500">
-              {selectedAddress
-                ? `${selectedAddress.street}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.country}`
-                : "No address found"}
-            </p>
-
-            <button
-              onClick={() => setShowAddress(!showAddress)}
-              className="text-primary hover:underline cursor-pointer mt-2 block"
-            >
-              Change
-            </button>
-
-            {/* Dropdown appears below the button */}
-            {showAddress && (
-              <div className="absolute top-full left-0 mt-1 py-1 bg-white border border-gray-300 text-sm w-full z-10 shadow-md">
-                {addresses.map((address, index) => (
-                  <p
-                    key={index}
-                    onClick={() => {
-                      setSelectedAddress(address);
-                      setShowAddress(false);
-                    }}
-                    className="text-gray-500 p-2 hover:bg-gray-100 cursor-pointer"
-                  >
-                    {address.street}, {address.city}, {address.state},{" "}
-                    {address.country}
-                  </p>
-                ))}
-                <p
-                  onClick={() => navigate("/add-address")}
-                  className="text-primary text-center cursor-pointer p-2 hover:bg-indigo-500/10"
-                >
-                  Add address
-                </p>
-              </div>
-            )}
-          </div>
-
-          <p className="text-sm font-medium uppercase mt-6">Payment Method</p>
-          <select
-            onChange={(e) => setPaymentOption(e.target.value)}
-            className="w-full border border-gray-300 bg-white px-3 py-2 mt-2 outline-none"
-          >
-            <option value="COD">Cash On Delivery</option>
-            <option value="Online">Online Payment</option>
-          </select>
-        </div>
-
-        <hr className="border-gray-300" />
-
-        <div className="text-gray-500 mt-4 space-y-2">
+        <div className="space-y-2 text-gray-500">
           <p className="flex justify-between">
             <span>Price</span>
-            <span>
-              {currency}
-              {getCartAmount()}
-            </span>
+            <span>{currency}{getCartAmount()}</span>
           </p>
           <p className="flex justify-between">
             <span>Shipping Fee</span>
@@ -393,28 +164,23 @@ const placeOrder = async () => {
           </p>
           <p className="flex justify-between">
             <span>Tax (2%)</span>
-            <span>
-              {currency}
-              {(getCartAmount() * 2) / 100}
-            </span>
+            <span>{currency}{taxAmount}</span>
           </p>
-          <p className="flex justify-between text-lg font-medium mt-3">
-            <span>Total Amount:</span>
-            <span>
-              {currency}
-              {getCartAmount() + (getCartAmount() * 2) / 100}
-            </span>
+          <p className="flex justify-between text-lg font-medium pt-3">
+            <span>Total Amount</span>
+            <span>{currency}{totalAmount}</span>
           </p>
         </div>
 
         <button
-          onClick={placeOrder}
-          className="w-full py-3 mt-6 cursor-pointer bg-primary text-white font-medium hover:bg-primary-dull transition"
+          onClick={handleCheckout}
+          className="w-full py-3 mt-6 bg-primary text-white font-medium hover:bg-primary-dull transition"
         >
-          {paymentOption === "COD" ? "Place Order" : "Proceed to Checkout"}
+          Checkout
         </button>
       </div>
     </div>
   ) : null;
 };
+
 export default Cart;

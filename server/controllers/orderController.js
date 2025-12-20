@@ -9,31 +9,64 @@ const razorpayInstance = new Razorpay({
 });
 
 
-//place order COD : /api/order/cod
-export const placeOrderCOD = async(req, res) => {
-    try {
-        const {userId, items, address} = req.body;
-        if(!address || items.length === 0){
-            return res.json({success: false, message: 'Address and items are required'});
-        }
-        //calculate total amount
-        let amount = 0;
+// place order COD : /api/order/cod
+export const placeOrderCOD = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { items, address } = req.body;
+
+    if (!items || items.length === 0) {
+      return res.json({ success: false, message: "No items in order" });
+    }
+
+    if (!address) {
+      return res.json({ success: false, message: "Address required" });
+    }
+
+    // ✅ Calculate amount from DB
+    let amount = 0;
     for (const item of items) {
       const product = await Product.findById(item.product);
       if (!product) {
-        return res.json({ success: false, message: `Product not found: ${item.product}` });
+        return res.json({
+          success: false,
+          message: `Product not found: ${item.product}`,
+        });
       }
       amount += product.offerPrice * item.quantity;
     }
-        //add Tax Charge(2%)
-        amount += Math.floor(amount * 0.02);
-        //create order
-        await Order.create({userId, items, amount, address, paymentType: 'COD', isPaid: false});
-        res.json({success: true, message: 'Order placed successfully'});
-    } catch (error) {
-        return res.json({success: false, message: error.message});
-    }
-}
+
+    // ✅ Add tax (2%)
+    amount += Math.floor(amount * 0.02);
+
+    console.log("Creating order with:", {
+      userId,
+      items,
+      amount,
+      address,
+    })
+
+    const order = await Order.create({
+      userId,
+      items,
+      amount,               // ✅ REQUIRED
+      address,
+      paymentType: "COD",   // ✅ MATCH SCHEMA
+      isPaid: false,        // ✅ REQUIRED
+      status: "Order Placed",
+    });
+
+    return res.json({
+      success: true,
+      message: "Order placed successfully",
+      order,
+    });
+  } catch (error) {
+    console.error("Order error:", error);
+    return res.json({ success: false, message: error.message });
+  }
+  
+};
 
 // POST /api/order/razorpay/order
 export const createRazorpayOrder = async (req, res) => {

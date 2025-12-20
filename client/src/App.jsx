@@ -21,6 +21,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Refund from "./pages/Refund";
 import Contact from "./pages/Contact";
+import Checkout from './pages/Checkout'
 
 const App = () => {
   const isSellerPath = useLocation().pathname.includes("seller");
@@ -38,6 +39,7 @@ const App = () => {
           <Route path='/products/:category' element={<ProductCategory/>}></Route>
           <Route path='/products/:category/:id' element={<ProductDetails/>}></Route>
           <Route path='/cart' element={<Cart/>}></Route>
+          <Route path='/checkout' element={<Checkout/>}></Route>
           <Route path='/add-address' element={<AddAddress/>}></Route>
           <Route path='/my-orders' element={<MyOrders/>}></Route>
           <Route path='/seller' element={isSeller ? <Sellerlayout/> : <SellerLogin/>}>

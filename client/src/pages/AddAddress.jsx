@@ -16,7 +16,7 @@ const InputField = ({type, placeholder, name, handleChange, address})=>(
 
 const AddAddress = () => {
 
-    const {axios, user, navigate} = useAppContext();
+    const {axios, user, navigate, setShowUserLogin, setRedirectAfterLogin} = useAppContext();
 
     const[address,setAddress] = useState({
         firstName:'',
@@ -56,11 +56,14 @@ const AddAddress = () => {
             toast.error(error.message)
         }
     }
-    useEffect(()=>{
-        if(!user){
-            navigate('/cart')
-        }
-    },[])
+   useEffect(() => {
+    if (!user) {
+        toast.error("Please login to add address");
+        setRedirectAfterLogin("/add-address");
+        setShowUserLogin(true);
+        navigate("/checkout");
+    }
+}, [user])
 
   return (
     <div className='mt-16 pb-16'>

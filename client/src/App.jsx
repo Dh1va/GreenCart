@@ -22,6 +22,7 @@ import Privacy from "./pages/Privacy";
 import Refund from "./pages/Refund";
 import Contact from "./pages/Contact";
 import Checkout from './pages/Checkout'
+import Profile from './pages/Profile'
 
 const App = () => {
   const isSellerPath = useLocation().pathname.includes("seller");
@@ -42,6 +43,7 @@ const App = () => {
           <Route path='/checkout' element={<Checkout/>}></Route>
           <Route path='/add-address' element={<AddAddress/>}></Route>
           <Route path='/my-orders' element={<MyOrders/>}></Route>
+          <Route path='/profile' element={<Profile/>}></Route>
           <Route path='/seller' element={isSeller ? <Sellerlayout/> : <SellerLogin/>}>
             <Route index element={isSeller ? <AddProduct/> : null}/>
             <Route path='product-list' element={<ProductList/>}/>

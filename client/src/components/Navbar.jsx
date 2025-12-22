@@ -84,6 +84,12 @@ const Navbar = () => {
               </li>
               <li
                 className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer"
+                onClick={() => navigate("/profile")}
+              >
+                Profile
+              </li>
+              <li
+                className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer"
                 onClick={logout}
               >
                 Logout
@@ -133,9 +139,14 @@ const Navbar = () => {
             All Product
           </NavLink>
           {user && (
-            <NavLink to={"/products"} onClick={() => setOpen(false)}>
-              My Orders
-            </NavLink>
+            <>
+              <NavLink to="/profile" onClick={() => setOpen(false)}>
+                Profile
+              </NavLink>
+              <NavLink to="/my-orders" onClick={() => setOpen(false)}>
+                My Orders
+              </NavLink>
+            </>
           )}
           <NavLink to={"/"} onClick={() => setOpen(false)}>
             Contact

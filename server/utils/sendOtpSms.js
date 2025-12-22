@@ -1,4 +1,5 @@
 import axios from "axios";
+import Otp from "../models/Otp.js";
 
 export const sendOtpSms = async (mobile, otp) => {
   const message = `Dear Customer Your verification code for Pragadeesh Publication is ${otp}`;
@@ -17,4 +18,6 @@ export const sendOtpSms = async (mobile, otp) => {
 
   const response = await axios.get(url, { params });
   return response.data;
+
+
 };

@@ -1,38 +1,39 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
+import OtpInput from "./OtpInput";
 
 const Login = () => {
   const {
-    axios,
-    setUser,
     setShowUserLogin,
+    setUser,
+    axios,
     navigate,
     redirectAfterLogin,
     setRedirectAfterLogin,
   } = useAppContext();
 
-  const [step, setStep] = useState("mobile"); // mobile | otp
+  const [step, setStep] = useState("mobile"); // mobile | otp | name
   const [mobile, setMobile] = useState("");
-  const [name, setName] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(30);
+  const [resendTimer, setResendTimer] = useState(0);
 
-  const otpRefs = useRef([]);
+  const otpValue = otp.join("");
 
-  /* ---------------- TIMER ---------------- */
+  /* ---------------- RESEND TIMER ---------------- */
   useEffect(() => {
-    if (step !== "otp" || timer === 0) return;
-    const interval = setInterval(() => {
-      setTimer((t) => t - 1);
+    if (resendTimer === 0) return;
+    const t = setInterval(() => {
+      setResendTimer((s) => s - 1);
     }, 1000);
-    return () => clearInterval(interval);
-  }, [step, timer]);
+    return () => clearInterval(t);
+  }, [resendTimer]);
 
   /* ---------------- SEND OTP ---------------- */
   const sendOtp = async () => {
-    if (mobile.length !== 10) {
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
       toast.error("Enter valid 10-digit mobile number");
       return;
     }
@@ -44,9 +45,8 @@ const Login = () => {
       if (data.success) {
         toast.success("OTP sent");
         setStep("otp");
-        setTimer(30);
         setOtp(["", "", "", "", "", ""]);
-        setTimeout(() => otpRefs.current[0]?.focus(), 100);
+        setResendTimer(30);
       } else {
         toast.error(data.message);
       }
@@ -59,9 +59,39 @@ const Login = () => {
 
   /* ---------------- VERIFY OTP ---------------- */
   const verifyOtp = async () => {
-    const otpValue = otp.join("");
     if (otpValue.length !== 6) {
-      toast.error("Enter complete OTP");
+      toast.error("Enter 6-digit OTP");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data } = await axios.post("/api/auth/verify-otp", {
+        mobile,
+        otp: otpValue,
+      });
+
+      if (data.requireName) {
+        setStep("name");
+        return;
+      }
+
+      if (data.success) {
+        finishLogin(data.user);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ---------------- SUBMIT NAME ---------------- */
+  const submitName = async () => {
+    if (name.trim().length < 2) {
+      toast.error("Enter your name");
       return;
     }
 
@@ -74,16 +104,7 @@ const Login = () => {
       });
 
       if (data.success) {
-        setUser(data.user);
-        toast.success("Logged in successfully");
-        setShowUserLogin(false);
-
-        if (redirectAfterLogin) {
-          navigate(redirectAfterLogin);
-          setRedirectAfterLogin(null);
-        } else {
-          navigate("/");
-        }
+        finishLogin(data.user);
       } else {
         toast.error(data.message);
       }
@@ -94,22 +115,16 @@ const Login = () => {
     }
   };
 
-  /* ---------------- OTP INPUT HANDLER ---------------- */
-  const handleOtpChange = (index, value) => {
-    if (!/^[0-9]?$/.test(value)) return;
+  /* ---------------- FINALIZE LOGIN ---------------- */
+  const finishLogin = (user) => {
+    setUser(user);
+    setShowUserLogin(false);
 
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
+    if (redirectAfterLogin) {
+      navigate(redirectAfterLogin);
+      setRedirectAfterLogin(null);
+    } else {
+      navigate("/");
     }
   };
 
@@ -120,101 +135,86 @@ const Login = () => {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-80 sm:w-[360px] bg-white p-8 rounded-lg shadow-xl border"
+        className="flex flex-col gap-4 p-8 py-10 w-80 sm:w-[352px] bg-white border border-gray-200 rounded-lg shadow-xl"
       >
-        <p className="text-2xl font-medium text-center mb-6">
+        <p className="text-2xl font-medium text-center">
           <span className="text-primary">User</span> Login
         </p>
 
-        {/* ---------- MOBILE STEP ---------- */}
+        {/* MOBILE STEP */}
         {step === "mobile" && (
           <>
-            <div className="mb-4">
-              <p>Mobile Number</p>
-              <input
-                type="tel"
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
-                placeholder="10-digit mobile number"
-                maxLength={10}
-                className="w-full mt-1 p-2 border rounded outline-primary"
-              />
-            </div>
-
-            <div className="mb-4">
-              <p>Name (first time only)</p>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                className="w-full mt-1 p-2 border rounded outline-primary"
-              />
-            </div>
-
+            <input
+              type="tel"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendOtp()}
+              placeholder="Mobile number"
+              disabled={loading}
+              className="border p-2 rounded outline-primary"
+            />
             <button
               onClick={sendOtp}
               disabled={loading}
-              className={`w-full py-2 rounded-md text-white ${
-                loading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-primary hover:bg-primary-dull"
-              }`}
+              className="bg-primary text-white py-2 rounded hover:bg-primary-dull"
             >
-              {loading ? "Sending OTP..." : "Continue"}
+              {loading ? "Sending..." : "Send OTP"}
             </button>
           </>
         )}
 
-        {/* ---------- OTP STEP ---------- */}
+        {/* OTP STEP */}
         {step === "otp" && (
           <>
-            <p className="text-center mb-4">
-              Enter OTP sent to <b>{mobile}</b>
-            </p>
-
-            <div className="flex justify-between gap-2 mb-4">
-              {otp.map((digit, i) => (
-                <input
-                  key={i}
-                  ref={(el) => (otpRefs.current[i] = el)}
-                  value={digit}
-                  onChange={(e) =>
-                    handleOtpChange(i, e.target.value)
-                  }
-                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                  maxLength={1}
-                  className="w-10 h-10 text-center border rounded text-lg outline-primary"
-                />
-              ))}
-            </div>
+            <OtpInput
+              otp={otp}
+              setOtp={setOtp}
+              onEnter={verifyOtp}
+              disabled={loading}
+            />
 
             <button
               onClick={verifyOtp}
-              disabled={loading}
-              className={`w-full py-2 rounded-md text-white ${
-                loading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-primary hover:bg-primary-dull"
-              }`}
+              disabled={loading || otpValue.length !== 6}
+              className="bg-primary text-white py-2 rounded hover:bg-primary-dull mt-2"
             >
               {loading ? "Verifying..." : "Verify OTP"}
             </button>
 
-            <div className="text-center mt-4">
-              {timer > 0 ? (
-                <p className="text-gray-500">
-                  Resend OTP in {timer}s
-                </p>
-              ) : (
-                <button
-                  onClick={sendOtp}
-                  className="text-primary hover:underline"
-                >
-                  Resend OTP
-                </button>
-              )}
-            </div>
+            {resendTimer > 0 ? (
+              <p className="text-center text-gray-400">
+                Resend OTP in {resendTimer}s
+              </p>
+            ) : (
+              <button
+                onClick={sendOtp}
+                className="text-primary text-sm underline"
+              >
+                Resend OTP
+              </button>
+            )}
+          </>
+        )}
+
+        {/* NAME STEP (FIRST LOGIN ONLY) */}
+        {step === "name" && (
+          <>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submitName()}
+              placeholder="Your name"
+              disabled={loading}
+              className="border p-2 rounded outline-primary"
+            />
+            <button
+              onClick={submitName}
+              disabled={loading}
+              className="bg-primary text-white py-2 rounded hover:bg-primary-dull"
+            >
+              {loading ? "Saving..." : "Continue"}
+            </button>
           </>
         )}
       </div>

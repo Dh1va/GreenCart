@@ -9,8 +9,12 @@ export const sendOtp = async (req, res) => {
   try {
     const { mobile } = req.body;
 
-    if (!mobile || mobile.length !== 10) {
-      return res.json({ success: false, message: "Invalid mobile number" });
+    // 🇮🇳 Indian mobile validation (starts with 6–9)
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      return res.json({
+        success: false,
+        message: "Enter a valid Indian mobile number",
+      });
     }
 
     const existing = await Otp.findOne({ mobile });
@@ -22,6 +26,16 @@ export const sendOtp = async (req, res) => {
       return res.json({
         success: false,
         message: "Please wait before requesting another OTP",
+      });
+    }
+
+    if (
+      existing &&
+      existing.createdAt > new Date(Date.now() - 10 * 60 * 1000)
+    ) {
+      return res.json({
+        success: false,
+        message: "Too many OTP requests. Please try again after 10 minutes.",
       });
     }
 
@@ -63,7 +77,7 @@ export const verifyOtp = async (req, res) => {
     if (record.attempts >= 5) {
       return res.json({
         success: false,
-        message: "Too many wrong attempts",
+        message: "Too many wrong attempts. Try later.",
       });
     }
 
@@ -75,8 +89,21 @@ export const verifyOtp = async (req, res) => {
     }
 
     let user = await User.findOne({ mobile });
+
+    // 🆕 FIRST TIME USER → NAME REQUIRED
     if (!user) {
-      user = await User.create({ mobile, name });
+      if (!name || name.trim().length < 2) {
+        return res.json({
+          success: false,
+          requireName: true,
+          message: "Name required for first-time login",
+        });
+      }
+
+      user = await User.create({
+        mobile,
+        name: name.trim(),
+      });
     }
 
     await Otp.deleteMany({ mobile });
@@ -92,8 +119,14 @@ export const verifyOtp = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({ success: true, user });
+    return res.json({
+      success: true,
+      user,
+      isNewUser: !user.name ? true : false,
+    });
   } catch (err) {
-    res.json({ success: false, message: err.message });
+    return res.json({ success: false, message: err.message });
   }
 };
+
+

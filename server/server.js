@@ -13,6 +13,7 @@ import authRouter from "./routes/authRoutes.js";
 import adminUserRouter from "./routes/adminUserRoute.js";
 import userRouter from "./routes/userRoute.js";
 import { startOtpCleanup } from "./cron/otpCleanup.js";
+import profileRouter from "./routes/profileRoute.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -55,6 +56,7 @@ app.use("/api/cart", cartRouter);
 app.use("/api/address", addressRouter);
 app.use("/api/order", orderRouter);
 app.use("/api/admin", adminUserRouter);
+app.use("/api/profile", profileRouter);
 
 // OTP cleanup cron
 startOtpCleanup();

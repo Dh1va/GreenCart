@@ -11,6 +11,15 @@ const addressSchema = new mongoose.Schema({
     zipCode: {type: Number, required: true},
     country: {type: String, required: true},
     phone: {type: String, required: true},
+    label: {
+  type: String,
+  enum: ["Home", "Office", "Other"],
+  default: "Home",
+},
+isDefault: {
+  type: Boolean,
+  default: false,
+},
 });
 
 const Address = mongoose.models.address || mongoose.model('address', addressSchema);

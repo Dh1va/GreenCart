@@ -1,5 +1,6 @@
 import Order from "../models/Order.js";
 import Product from "../models/product.js";
+import Coupon from "../models/Coupon.js";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 
@@ -8,12 +9,43 @@ const razorpayInstance = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+/* ------------------------------------------------
+   UTILITY: CALCULATE ORDER AMOUNT (SERVER AUTHORITY)
+------------------------------------------------- */
+const calculateAmount = async ({ items, courier, coupon }) => {
+  let subtotal = 0;
 
-// place order COD : /api/order/cod
+  for (const item of items) {
+    const product = await Product.findById(item.product);
+    if (!product) {
+      throw new Error(`Product not found: ${item.product}`);
+    }
+    subtotal += product.offerPrice * item.quantity;
+  }
+
+  const tax = Math.floor(subtotal * 0.02);
+  const courierPrice = courier?.price || 0;
+  const couponDiscount = coupon?.discount || 0;
+
+  const total = subtotal + tax + courierPrice - couponDiscount;
+
+  return {
+    subtotal,
+    tax,
+    courierPrice,
+    couponDiscount,
+    total,
+  };
+};
+
+/* ------------------------------------------------
+   PLACE ORDER — COD
+   POST /api/order/cod
+------------------------------------------------- */
 export const placeOrderCOD = async (req, res) => {
   try {
     const userId = req.userId;
-    const { items, address } = req.body;
+    const { items, address, courier, coupon } = req.body;
 
     if (!items || items.length === 0) {
       return res.json({ success: false, message: "No items in order" });
@@ -23,56 +55,50 @@ export const placeOrderCOD = async (req, res) => {
       return res.json({ success: false, message: "Address required" });
     }
 
-    // ✅ Calculate amount from DB
-    let amount = 0;
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-      if (!product) {
-        return res.json({
-          success: false,
-          message: `Product not found: ${item.product}`,
-        });
-      }
-      amount += product.offerPrice * item.quantity;
-    }
-
-    // ✅ Add tax (2%)
-    amount += Math.floor(amount * 0.02);
-
-    console.log("Creating order with:", {
-      userId,
+    const amountData = await calculateAmount({
       items,
-      amount,
-      address,
-    })
+      courier,
+      coupon,
+    });
 
     const order = await Order.create({
       userId,
       items,
-      amount,               // ✅ REQUIRED
+      amount: amountData.total,
       address,
-      paymentType: "COD",   // ✅ MATCH SCHEMA
-      isPaid: false,        // ✅ REQUIRED
+      courier: courier || null,
+      coupon: coupon || null,
+      paymentType: "COD",
+      isPaid: false,
       status: "Order Placed",
     });
 
-    return res.json({
+    if (coupon?.code) {
+      await Coupon.findOneAndUpdate(
+        { code: coupon.code },
+        { $inc: { usedCount: 1 } }
+      );
+    }
+
+    res.json({
       success: true,
       message: "Order placed successfully",
       order,
     });
   } catch (error) {
-    console.error("Order error:", error);
-    return res.json({ success: false, message: error.message });
+    console.error("COD Order Error:", error);
+    res.json({ success: false, message: error.message });
   }
-  
 };
 
-// POST /api/order/razorpay/order
+/* ------------------------------------------------
+   CREATE RAZORPAY ORDER
+   POST /api/order/razorpay/order
+------------------------------------------------- */
 export const createRazorpayOrder = async (req, res) => {
   try {
-    const userId = req.userId || req.user?._id; // from authUser middleware
-    const { items, addressId } = req.body;
+    const userId = req.userId;
+    const { items, addressId, courier, coupon } = req.body;
 
     if (!userId) {
       return res.json({ success: false, message: "User not authenticated" });
@@ -85,8 +111,9 @@ export const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    // Calculate amount from DB (same logic as COD)
-    let amount = 0;
+    /* ---------------- CALCULATE SUBTOTAL ---------------- */
+    let subtotal = 0;
+
     for (const item of items) {
       const product = await Product.findById(item.product);
       if (!product) {
@@ -95,26 +122,45 @@ export const createRazorpayOrder = async (req, res) => {
           message: `Product not found: ${item.product}`,
         });
       }
-      amount += product.offerPrice * item.quantity;
+      subtotal += product.offerPrice * item.quantity;
     }
 
-    const tax = Math.floor(amount * 0.02);
-    const totalAmount = amount + tax; // in rupees
+    /* ---------------- ADD TAX ---------------- */
+    const tax = Math.floor(subtotal * 0.02);
 
-    // Create Razorpay order (amount in paise)
+    /* ---------------- ADD DELIVERY ---------------- */
+    const deliveryCharge = courier?.price || 0;
+
+    /* ---------------- APPLY COUPON ---------------- */
+    const couponDiscount = coupon?.discount || 0;
+
+    /* ---------------- FINAL AMOUNT ---------------- */
+    const finalAmount =
+      subtotal + tax + deliveryCharge - couponDiscount;
+
+    /* ---------------- CREATE RAZORPAY ORDER ---------------- */
     const razorpayOrder = await razorpayInstance.orders.create({
-      amount: totalAmount * 100, // convert to paise
+      amount: finalAmount * 100, // paise
       currency: "INR",
       notes: {
         userId,
         addressId,
+        courier: courier?.name || "N/A",
+        deliveryCharge,
+        coupon: coupon?.code || "N/A",
       },
     });
 
     return res.json({
       success: true,
       order: razorpayOrder,
-      amount: totalAmount,
+      amount: finalAmount,
+      breakdown: {
+        subtotal,
+        tax,
+        deliveryCharge,
+        couponDiscount,
+      },
       key: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error) {
@@ -123,27 +169,28 @@ export const createRazorpayOrder = async (req, res) => {
   }
 };
 
-// POST /api/order/razorpay/verify
+
+/* ------------------------------------------------
+   VERIFY RAZORPAY PAYMENT
+   POST /api/order/razorpay/verify
+------------------------------------------------- */
 export const verifyRazorpayPayment = async (req, res) => {
   try {
-    const userId = req.userId || req.user?._id;
+    const userId = req.userId;
     const {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
       items,
       addressId,
+      courier,
+      coupon,
     } = req.body;
 
-    if (!userId) {
-      return res.json({ success: false, message: "User not authenticated" });
-    }
-
-    // 1. Verify signature
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
+      .update(body)
       .digest("hex");
 
     if (expectedSignature !== razorpay_signature) {
@@ -153,59 +200,54 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // 2. Recalculate amount (same as before)
-    let amount = 0;
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-      if (!product) {
-        return res.json({
-          success: false,
-          message: `Product not found: ${item.product}`,
-        });
-      }
-      amount += product.offerPrice * item.quantity;
-    }
-    amount += Math.floor(amount * 0.02);
+    const amountData = await calculateAmount({
+      items,
+      courier,
+      coupon,
+    });
 
-    // 3. Create order in DB
     const order = await Order.create({
       userId,
       items,
-      amount,
+      amount: amountData.total,
       address: addressId,
+      courier: courier || null,
+      coupon: coupon || null,
       paymentType: "Online",
       isPaid: true,
       status: "Order Placed",
     });
 
-    return res.json({
+    if (coupon?.code) {
+      await Coupon.findOneAndUpdate(
+        { code: coupon.code },
+        { $inc: { usedCount: 1 } }
+      );
+    }
+
+    res.json({
       success: true,
-      message: "Payment successful and order created",
+      message: "Payment successful",
       order,
     });
   } catch (error) {
-    console.error("verifyRazorpayPayment error:", error);
-    return res.json({ success: false, message: error.message });
+    console.error("Verify Payment Error:", error);
+    res.json({ success: false, message: error.message });
   }
 };
 
-
-
-//get orders by user ID : /api/order/user
+/* ------------------------------------------------
+   GET USER ORDERS
+   GET /api/order/user?userId=
+------------------------------------------------- */
 export const getUserOrders = async (req, res) => {
   try {
-    // ✅ read userId from query, NOT body
-     console.log("📦 [getUserOrders] HIT", {
-      method: req.method,
-      query: req.query,
-      body: req.body,
-    });
     const { userId } = req.query;
 
     if (!userId) {
       return res.json({
         success: false,
-        message: "User ID is required",
+        message: "User ID required",
       });
     }
 
@@ -222,16 +264,19 @@ export const getUserOrders = async (req, res) => {
   }
 };
 
+/* ------------------------------------------------
+   GET ALL ORDERS (ADMIN / SELLER)
+------------------------------------------------- */
+export const getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      $or: [{ paymentType: "COD" }, { isPaid: true }],
+    })
+      .populate("items.product address")
+      .sort({ createdAt: -1 });
 
-//get all orders : /api/order/seller
-
-export const getAllOrders = async(req, res) => {
-    try {
-        const orders = await Order.find({
-        $or: [{paymentType:'COD'}, {isPaid:true}]
-    }).populate('items.product address').sort({createdAt: -1});
-    res.json({success: true, orders}); 
-    } catch (error) {
-        res.json({success: false, message: error.message});
-    }
-}
+    res.json({ success: true, orders });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};

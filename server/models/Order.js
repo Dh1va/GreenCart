@@ -1,19 +1,66 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const orderSchema = new mongoose.Schema({
-   userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'user' },
-    items: [{
-        product:{type:mongoose.Schema.Types.ObjectId, required:true, ref:'product'},
-        quantity:{type:Number, required:true},
-    }],
-    amount: {type: Number, required: true},
-    address: {type: Object, required: true, ref: 'address'},
-    status: {type: String, default: 'Order Placed'},
-    paymentType:{type:String, required:true},
-    isPaid:{type:Boolean, required:true, default:false},
+const orderSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "user",
+    },
 
-},{timestamps:true});
+    items: [
+      {
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true,
+          ref: "product",
+        },
+        quantity: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
 
-const Order = mongoose.models.order || mongoose.model('order', orderSchema);
+    amount: {
+      type: Number,
+      required: true,
+    },
 
-export default Order;
+    address: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "address",
+    },
+
+    courier: {
+      name: { type: String },
+      price: { type: Number, default: 0 },
+    },
+
+    coupon: {
+      code: { type: String },
+      discount: { type: Number, default: 0 },
+    },
+
+    status: {
+      type: String,
+      default: "Order Placed",
+    },
+
+    paymentType: {
+      type: String,
+      required: true,
+    },
+
+    isPaid: {
+      type: Boolean,
+      default: false,
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
+
+export default mongoose.models.order ||
+  mongoose.model("order", orderSchema);

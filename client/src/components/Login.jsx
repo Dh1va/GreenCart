@@ -146,13 +146,20 @@ const Login = () => {
           <>
             <input
               type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={10}
               value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendOtp()}
-              placeholder="Mobile number"
-              disabled={loading}
-              className="border p-2 rounded outline-primary"
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+                if (value.length <= 10) {
+                  setMobile(value);
+                }
+              }}
+              placeholder="Enter mobile number"
+              className="w-full p-2 border rounded outline-primary"
             />
+
             <button
               onClick={sendOtp}
               disabled={loading}

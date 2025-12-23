@@ -122,7 +122,7 @@ export const verifyOtp = async (req, res) => {
     return res.json({
       success: true,
       user,
-      isNewUser: !user.name ? true : false,
+      hasMergedGuestCart: user.hasMergedGuestCart
     });
   } catch (err) {
     return res.json({ success: false, message: err.message });

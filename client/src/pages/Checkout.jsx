@@ -3,6 +3,7 @@ import { useAppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
 import AddAddressModal from "../components/AddAddressModal";
 import ConfirmActionModal from "../components/ConfirmActionModal";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Checkout = () => {
   const {
@@ -26,7 +27,6 @@ const Checkout = () => {
     { name: "Same Day Delivery", price: 99 },
   ]);
 
-
   const [cartArray, setCartArray] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -39,10 +39,6 @@ const Checkout = () => {
   const [selectedCourier, setSelectedCourier] = useState(couriers[0]);
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
-
-
-
-
 
   /* ---------------- AUTH GUARD ---------------- */
   useEffect(() => {
@@ -104,7 +100,6 @@ const Checkout = () => {
           name: selectedCourier.name,
           price: selectedCourier.price,
         },
-
       });
 
       if (!data.success) {
@@ -123,19 +118,16 @@ const Checkout = () => {
         order_id: order.id,
 
         handler: async function (response) {
-          const verify = await axios.post(
-            "/api/order/razorpay/verify",
-            {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              items: cartArray.map((i) => ({
-                product: i._id,
-                quantity: i.quantity,
-              })),
-              addressId: selectedAddress._id,
-            }
-          );
+          const verify = await axios.post("/api/order/razorpay/verify", {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            items: cartArray.map((i) => ({
+              product: i._id,
+              quantity: i.quantity,
+            })),
+            addressId: selectedAddress._id,
+          });
 
           if (verify.data.success) {
             toast.success("Payment successful");
@@ -174,334 +166,479 @@ const Checkout = () => {
     }
   };
 
-
   const taxAmount = (getCartAmount() * 2) / 100;
-  const totalAmount = getCartAmount() + taxAmount + selectedCourier.price - discount;
+  const totalAmount =
+    getCartAmount() + taxAmount + selectedCourier.price - discount;
 
+  const AddressSkeleton = () => (
+    <div className="animate-pulse space-y-3">
+      <div className="h-4 bg-gray-200 rounded w-32"></div>
+      <div className="h-3 bg-gray-200 rounded w-full"></div>
+      <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+    </div>
+  );
 
   return (
-    <div className="flex flex-col md:flex-row py-16 mt-16 gap-10">
-      {/* LEFT */}
-      <div className="flex-1 max-w-3xl">
-        <h1 className="text-3xl font-medium mb-6">Checkout</h1>
+    <div className="py-16 mt-16">
+      {/* PAGE TITLE */}
+      <div className="max-w-[1280px] mx-auto px-4 md:px-0 mb-6">
+        <h1 className="text-3xl font-semibold text-gray-900">Checkout</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Review your order and complete payment
+        </p>
+      </div>
 
-        {/* ADDRESS */}
-        <p className="text-sm font-medium uppercase">Delivery Address</p>
-
-        <div className="relative mt-2">
-          <p className="text-gray-500">
-            {selectedAddress
-              ? `${selectedAddress.street}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.country}, ${selectedAddress.zipCode}`
-              : "No address found"}
-          </p>
-
-          <div className="flex gap-4 mt-2">
-            {/* SELECT PREVIOUS ADDRESS */}
-            <button
-              onClick={() => setShowAddress((prev) => !prev)}
-              className="text-primary hover:underline"
-            >
-              Change
-            </button>
-
-            {/* EDIT CURRENT ADDRESS */}
-            <button
-              onClick={() => {
-                setEditAddress(selectedAddress);
-                setShowAddModal(true);
-              }}
-              className="text-primary hover:underline"
-            >
-              Edit
-            </button>
-          </div>
-
-
-
-          {/* ADDRESS SELECTOR */}
-          {showAddress && (
-            <div className="absolute top-full left-0 mt-2 w-full bg-white shadow-lg rounded-md z-20">
-
-              {/* HEADER */}
-              <div className="flex justify-between items-center px-4 py-3">
-                <p className="text-sm font-medium text-gray-700">Select Address</p>
+      {/* CONTENT */}
+      <div className="flex flex-col md:flex-row gap-10 items-start max-w-[1280px] mx-auto px-4 md:px-0">
+        {/* LEFT */}
+        <motion.div
+          className="flex-1 max-w-4xl space-y-6 md:sticky"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+        >
+          {/* ================= DELIVERY ADDRESS ================= */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="p-1 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center px-5 py-3">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                1. Delivery Address
+              </h2>
+              <div className="flex gap-4">
                 <button
-                  onClick={() => setShowAddress(false)}
-                  className="text-gray-500 hover:text-black text-lg leading-none"
+                  onClick={() => setShowAddress(true)}
+                  className="text-xs font-bold text-primary hover:text-primary-dull transition-colors"
                 >
-                  ×
+                  CHANGE
                 </button>
-              </div>
-
-              {/* ADDRESS LIST */}
-              <div className="max-h-60 overflow-y-auto">
-                {addresses.map((address) => (
-                  <div
-                    key={address._id}
-                    className={`flex justify-between gap-3 px-4 py-3 text-sm ${selectedAddress?._id === address._id
-                      ? "bg-indigo-50"
-                      : "hover:bg-gray-100"
-                      }`}
+                {selectedAddress && (
+                  <button
+                    onClick={() => {
+                      setEditAddress(selectedAddress);
+                      setShowAddModal(true);
+                    }}
+                    className="text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {/* SELECT ADDRESS */}
-                    <div
+                    EDIT
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="p-6">
+              {!addresses.length ? (
+                <AddressSkeleton />
+              ) : selectedAddress ? (
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-primary/5 rounded-lg">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-primary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-900">
+                        {selectedAddress.label}
+                      </span>
+
+                      {selectedAddress.isDefault && (
+                        <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                          Default
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                      {selectedAddress.street}, {selectedAddress.city}, 
+                      {selectedAddress.state}, {selectedAddress.country} -{" "}
+                      {selectedAddress.zipCode}, <span className="text-gray-800 px-2">Phone: {selectedAddress.phone}</span>
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500 mb-4">
+                    No delivery address selected
+                  </p>
+                  <button
+                    onClick={() => setShowAddress(true)}
+                    className="text-sm font-medium px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/5 transition"
+                  >
+                    Select an Address
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* ================= ADDRESS SELECTOR MODAL-LIKE POPUP ================= */}
+            {showAddress && (
+              <div className="border-t border-gray-100 bg-gray-50 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="grid grid-cols-1 gap-3">
+                  {addresses.map((address) => (
+                    <button
+                      key={address._id}
                       onClick={() => {
                         setSelectedAddress(address);
                         setShowAddress(false);
                       }}
-                      className="cursor-pointer flex-1"
+                      className={`text-left p-4 rounded-xl border transition-all ${
+                        selectedAddress?._id === address._id
+                          ? "bg-white border-primary shadow-md ring-1 ring-primary"
+                          : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
+                      }`}
                     >
-                      <p className="font-medium text-gray-800">
-                        {address.label}
-                        {address.isDefault && (
-                          <span className="ml-2 text-xs text-green-600">(Default)</span>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-bold text-gray-900">
+                          {address.label}
+                        </span>
+                        {selectedAddress?._id === address._id && (
+                          <div className="h-4 w-4 rounded-full bg-primary flex items-center justify-center">
+                            <div className="h-2 w-2 rounded-full bg-white"></div>
+                          </div>
                         )}
-                      </p>
-                      <p className="text-gray-500">
+                      </div>
+                      <p className="text-xs text-gray-500 truncate">
                         {address.street}, {address.city}, {address.state}
                       </p>
-                    </div>
-
-                    {/* DELETE ICON */}
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-
-                        if (address.isDefault) {
-                          toast.error("Cannot delete default address");
-                          return;
-                        }
-
-                        setPendingDelete(address);
-                        setConfirmOpen(true);
-                      }}
-                      title="Delete address"
-                      className={`text-sm ${address.isDefault
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "text-gray-500 hover:text-red-300"
-                        }`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
-                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
-                        <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
-                      </svg>
                     </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* ADD NEW */}
-              <button
-                onClick={() => {
-                  setEditAddress(null);
-                  setShowAddModal(true);
-                  setShowAddress(false);
-                }}
-                className="w-full py-3 text-primary text-sm font-medium hover:bg-gray-100 rounded-b-md"
-              >
-                + Add new address
-              </button>
-            </div>
-          )}
-
-
-
-        </div>
-
-
-        {/* COURIER SELECTION */}
-        <p className="text-sm font-medium uppercase mt-8">Delivery Method</p>
-
-        <div className="mt-3 space-y-3">
-          {couriers.map((courier) => (
-            <label
-              key={courier.name}
-              className="flex items-center justify-between cursor-pointer p-3 rounded hover:bg-gray-50"
-            >
-              <div className="flex items-center gap-3">
-                {/* Custom Radio */}
-                <div
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center
-        ${selectedCourier.name === courier.name
-                      ? "border-[#4FBF8B]"
-                      : "border-gray-400"
-                    }
-      `}
-                >
-                  {selectedCourier.name === courier.name && (
-                    <div className="w-2 h-2 rounded-full bg-[#4FBF8B]" />
-                  )}
+                  ))}
+                  <button
+                    onClick={() => {
+                      setEditAddress(null);
+                      setShowAddModal(true);
+                      setShowAddress(false);
+                    }}
+                    className="flex items-center justify-center gap-2 p-3 text-sm font-semibold text-primary border-2 border-dashed border-gray-200 rounded-xl hover:border-primary hover:bg-primary/5 transition-all"
+                  >
+                    <span>+ Add New Address</span>
+                  </button>
                 </div>
+              </div>
+            )}
+          </div>
 
-                <input
-                  type="radio"
-                  name="courier"
-                  checked={selectedCourier.name === courier.name}
-                  onChange={() => setSelectedCourier(courier)}
-                  className="hidden"
-                />
+          {/* ================= DELIVERY ETA ================= */}
+<div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+  {/* HEADER */}
+  <div className="border-b border-gray-100 bg-gray-50/50 px-5 py-3">
+    <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+      2. Estimated Delivery
+    </h2>
+  </div>
 
-                <span className="text-sm text-gray-700">
-                  {courier.name}
+  {/* CONTENT */}
+  <div className="p-6 flex items-center gap-4">
+    <div className="h-10 w-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 shrink-0">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </div>
+
+    <div>
+      <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-1">
+        Delivery Timeline
+      </p>
+
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={selectedCourier.name}
+          className="text-sm font-semibold text-gray-800"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.2 }}
+        >
+          {selectedCourier.name === "Same Day Delivery"
+            ? "Arriving Today"
+            : selectedCourier.name === "Express Delivery"
+            ? "Arriving in 1–2 business days"
+            : "Arriving in 3–5 business days"}
+        </motion.p>
+      </AnimatePresence>
+    </div>
+  </div>
+</div>
+
+
+          {/* ================= DELIVERY INSTRUCTIONS ================= */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-4">
+              2. Delivery Instructions
+            </h2>
+            <textarea
+              placeholder="E.g. Call before delivery, leave with security…"
+              className="w-full p-4 text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+              rows={3}
+            />
+          </div>
+
+          {/* ================= TRUST BLOCK ================= */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Secure Payments", icon: "🔒" },
+              { label: "Easy Returns", icon: "📦" },
+              { label: "Verified Sellers", icon: "✅" },
+              { label: "Order Tracking", icon: "📍" },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className="bg-white border border-gray-100 rounded-xl py-3 px-2 shadow-sm flex flex-col items-center gap-1 group hover:border-primary/30 transition-colors"
+              >
+                <span className="text-lg">{item.icon}</span>
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight text-center">
+                  {item.label}
                 </span>
               </div>
+            ))}
+          </div>
+        </motion.div>
 
-              <span className="text-sm text-gray-600">
-                {courier.price === 0 ? "Free" : `${currency}${courier.price}`}
-              </span>
-            </label>
+        {/* RIGHT – SUMMARY */}
+        <div className="w-full max-w-[360px] bg-white p-5 border border-gray-200 rounded-md">
+          <h2 className="text-lg font-medium mb-4">Review your cart</h2>
 
-          ))}
-        </div>
+          {/* CART ITEMS */}
+          <div className="space-y-4 mb-5">
+            {cartArray.map((item) => (
+              <div key={item._id} className="flex gap-3">
+                <div className="w-16 h-16 border rounded flex items-center justify-center">
+                  <img
+                    src={item.images?.[0]}
+                    alt={item.name}
+                    className="object-contain h-full"
+                  />
+                </div>
 
-      </div>
-
-      {/* RIGHT – SUMMARY */}
-      {/* RIGHT – SUMMARY */}
-      <div className="w-full max-w-[360px] bg-white p-5 border border-gray-200 rounded-md">
-        <h2 className="text-lg font-medium mb-4">Review your cart</h2>
-
-        {/* CART ITEMS */}
-        <div className="space-y-4 mb-5">
-          {cartArray.map((item) => (
-            <div key={item._id} className="flex gap-3">
-              <div className="w-16 h-16 border rounded flex items-center justify-center">
-                <img
-                  src={item.images?.[0]}
-                  alt={item.name}
-                  className="object-contain h-full"
-                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{item.name}</p>
+                  <p className="text-xs text-gray-500">{item.quantity}x</p>
+                  <p className="text-sm mt-1">
+                    {currency}
+                    {item.offerPrice * item.quantity}
+                  </p>
+                </div>
               </div>
+            ))}
+          </div>
 
-              <div className="flex-1">
-                <p className="text-sm font-medium">{item.name}</p>
-                <p className="text-xs text-gray-500">{item.quantity}x</p>
-                <p className="text-sm mt-1">
-                  {currency}
-                  {item.offerPrice * item.quantity}
-                </p>
-              </div>
+          {/* COUPON */}
+          <div className="border rounded-md px-3 py-2 flex items-center gap-3 mb-5">
+            <input
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              placeholder="Discount code"
+              className="flex-1 outline-none text-sm bg-transparent"
+            />
+
+            <button
+              onClick={applyCoupon}
+              className="text-primary text-sm font-medium cursor-pointer"
+            >
+              Apply
+            </button>
+          </div>
+
+          {/* DELIVERY METHOD */}
+          <div className="mb-5">
+            <p className="text-sm font-medium uppercase mb-3 text-gray-700">
+              Delivery Method
+            </p>
+
+            <div className="space-y-2">
+              {couriers.map((courier) => (
+                <label
+                  key={courier.name}
+                  className={`flex items-center justify-between p-3 rounded cursor-pointer border
+          ${
+            selectedCourier.name === courier.name
+              ? "border-primary bg-primary/5"
+              : "border-gray-200 hover:bg-gray-50"
+          }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Custom Radio */}
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center
+              ${
+                selectedCourier.name === courier.name
+                  ? "border-primary"
+                  : "border-gray-400"
+              }`}
+                    >
+                      {selectedCourier.name === courier.name && (
+                        <div className="w-2 h-2 rounded-full bg-primary" />
+                      )}
+                    </div>
+
+                    <input
+                      type="radio"
+                      name="courier"
+                      checked={selectedCourier.name === courier.name}
+                      onChange={() => setSelectedCourier(courier)}
+                      className="hidden"
+                    />
+
+                    <span className="text-sm text-gray-700">
+                      {courier.name}
+                    </span>
+                    {/* MOBILE ETA */}
+  <span className="md:hidden text-xs text-gray-500 mt-0.5">
+    {courier.name === "Same Day Delivery"
+      ? "Arrives today"
+      : courier.name === "Express Delivery"
+      ? "1–2 business days"
+      : "3–5 business days"}
+  </span>
+                  </div>
+
+                  <span className="text-sm text-gray-600">
+                    {courier.price === 0
+                      ? "Free"
+                      : `${currency}${courier.price}`}
+                  </span>
+                </label>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* COUPON */}
-        <div className="border rounded-md px-3 py-2 flex items-center gap-3 mb-5">
-          <input
-            value={couponCode}
-            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-            placeholder="Discount code"
-            className="flex-1 outline-none text-sm bg-transparent"
-          />
+          {/* PRICE BREAKUP */}
+          <div className="space-y-2 text-sm text-gray-600">
+            <p className="flex justify-between">
+              <span>Subtotal</span>
+              <span>
+                {currency}
+                {getCartAmount()}
+              </span>
+            </p>
+
+            <p className="flex justify-between">
+              <span>Tax (2%)</span>
+              <span>
+                {currency}
+                {taxAmount}
+              </span>
+            </p>
+
+            <p className="flex justify-between">
+              <span>Delivery</span>
+              <span>
+                {selectedCourier.price === 0
+                  ? "Free"
+                  : `${currency}${selectedCourier.price}`}
+              </span>
+            </p>
+
+            {discount > 0 && (
+              <p className="flex justify-between text-green-600">
+                <span>Discount</span>
+                <span>
+                  -{currency}
+                  {discount}
+                </span>
+              </p>
+            )}
+
+            <hr />
+
+            <p className="flex justify-between text-base font-medium text-gray-800">
+              <span>Total</span>
+              <span>
+                {currency}
+                {totalAmount}
+              </span>
+            </p>
+          </div>
 
           <button
-            onClick={applyCoupon}
-            className="text-primary text-sm font-medium cursor-pointer"
+            onClick={placeOrder}
+            className="w-full py-3 mt-5 bg-primary text-white font-medium rounded hover:bg-primary-dull transition"
           >
-            Apply
+            Proceed to Pay
           </button>
         </div>
 
-        {/* PRICE BREAKUP */}
-        <div className="space-y-2 text-sm text-gray-600">
-          <p className="flex justify-between">
-            <span>Subtotal</span>
-            <span>{currency}{getCartAmount()}</span>
-          </p>
+        {/* ADD ADDRESS MODAL */}
+        <AddAddressModal
+          open={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          editAddress={editAddress}
+          onSaved={(updatedAddress) => {
+            fetchAddresses();
+            setSelectedAddress(updatedAddress); // ✅ SELECT UPDATED ADDRESS
+          }}
+        />
 
-          <p className="flex justify-between">
-            <span>Tax (2%)</span>
-            <span>{currency}{taxAmount}</span>
-          </p>
-
-          <p className="flex justify-between">
-            <span>Delivery</span>
-            <span>
-              {selectedCourier.price === 0
-                ? "Free"
-                : `${currency}${selectedCourier.price}`}
-            </span>
-          </p>
-
-          {discount > 0 && (
-            <p className="flex justify-between text-green-600">
-              <span>Discount</span>
-              <span>-{currency}{discount}</span>
-            </p>
-          )}
-
-          <hr />
-
-          <p className="flex justify-between text-base font-medium text-gray-800">
-            <span>Total</span>
-            <span>{currency}{totalAmount}</span>
-          </p>
-        </div>
-
-        <button
-          onClick={placeOrder}
-          className="w-full py-3 mt-5 bg-primary text-white font-medium rounded hover:bg-primary-dull transition"
-        >
-          Proceed to Pay
-        </button>
-      </div>
-
-
-      {/* ADD ADDRESS MODAL */}
-      <AddAddressModal
-        open={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        editAddress={editAddress}
-        onSaved={(updatedAddress) => {
-          fetchAddresses();
-          setSelectedAddress(updatedAddress); // ✅ SELECT UPDATED ADDRESS
-        }}
-      />
-
-      <ConfirmActionModal
-        open={confirmOpen}
-        onClose={() => {
-          setConfirmOpen(false);
-          setPendingDelete(null);
-        }}
-        title="Delete Address"
-        description="This address will be removed permanently."
-        confirmText="Delete"
-        cancelText="Cancel"
-        danger
-        loading={confirmLoading}
-        onConfirm={async () => {
-          try {
-            setConfirmLoading(true);
-            const { data } = await axios.delete(
-              `/api/address/${pendingDelete._id}`
-            );
-
-            if (data.success) {
-              toast.success("Address deleted");
-
-              const updated = addresses.filter(
-                (a) => a._id !== pendingDelete._id
-              );
-              setAddresses(updated);
-
-              if (selectedAddress?._id === pendingDelete._id) {
-                setSelectedAddress(updated[0] || null);
-              }
-            } else {
-              toast.error(data.message);
-            }
-          } catch (err) {
-            toast.error(err.message);
-          } finally {
-            setConfirmLoading(false);
+        <ConfirmActionModal
+          open={confirmOpen}
+          onClose={() => {
             setConfirmOpen(false);
             setPendingDelete(null);
-          }
-        }}
-      />
+          }}
+          title="Delete Address"
+          description="This address will be removed permanently."
+          confirmText="Delete"
+          cancelText="Cancel"
+          danger
+          loading={confirmLoading}
+          onConfirm={async () => {
+            try {
+              setConfirmLoading(true);
+              const { data } = await axios.delete(
+                `/api/address/${pendingDelete._id}`
+              );
 
+              if (data.success) {
+                toast.success("Address deleted");
 
+                const updated = addresses.filter(
+                  (a) => a._id !== pendingDelete._id
+                );
+                setAddresses(updated);
+
+                if (selectedAddress?._id === pendingDelete._id) {
+                  setSelectedAddress(updated[0] || null);
+                }
+              } else {
+                toast.error(data.message);
+              }
+            } catch (err) {
+              toast.error(err.message);
+            } finally {
+              setConfirmLoading(false);
+              setConfirmOpen(false);
+              setPendingDelete(null);
+            }
+          }}
+        />
+      </div>
     </div>
   );
 };

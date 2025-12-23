@@ -6,6 +6,10 @@ const userSchema = new mongoose.Schema(
     mobile: { type: String, required: true, unique: true },
     role: { type: String, default: "user" },
     cartItems: { type: Object, default: {} },
+    hasMergedGuestCart: {
+      type: Boolean,
+      default: false
+    }
   },
   { minimize: false, timestamps: true }
 );

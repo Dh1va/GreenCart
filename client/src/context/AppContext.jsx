@@ -19,7 +19,7 @@ export const AppContextProvider = ({children})=>{
     const [showUserLogin,setShowUserLogin] = useState(false)
     const [products, setProducts] = useState([])
     const [cartItems,setCartItems] = useState({})
-    const [searchQuery,setSearchQuery] = useState({})
+    const [searchQuery, setSearchQuery] = useState("");
     const [redirectAfterLogin, setRedirectAfterLogin] = useState(null);
     const [authChecked, setAuthChecked] = useState(false);
 
@@ -38,51 +38,24 @@ export const AppContextProvider = ({children})=>{
         }
     }
  
-   
-//     const fetchUser = async () => {
-//   try {
-//     const { data } = await axios.get('/api/user/is-auth');
-//     if (data.success) {
-//       setUser(data.user);
-
-//       // ✅ Convert array to object
-//       const formattedCart = {};
-//       if (Array.isArray(data.user.cartItems)) {
-//         data.user.cartItems.forEach(item => {
-//           if (item.product && item.quantity) {
-//             formattedCart[item.product] = item.quantity;
-//           }
-//         });
-//       }
-
-//       setCartItems(formattedCart);
-//     }
-//   } catch (error) {
-//     setUser(null);
-//   }
-// };
 
 const fetchUser = async () => {
   try {
     const { data } = await axios.get("/api/user/is-auth");
+
     if (data.success) {
-        setUser(data.user);
+      setUser(data.user);
 
-        const userCart = data.user.cartItems || {};
-
-        // ✅ ALWAYS restore cart from DB first
-        setCartItems(userCart);
-
-        // ✅ THEN merge guest cart if it exists
-        await mergeGuestCart(userCart);
+      // Always load DB cart
+      setCartItems(data.user.cartItems || {});
     }
-
-  } catch (error) {
+  } catch {
     setUser(null);
   } finally {
     setAuthChecked(true);
   }
 };
+
 
 
     //fetching products

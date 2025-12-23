@@ -5,13 +5,15 @@ import OtpInput from "./OtpInput";
 
 const Login = () => {
   const {
-    setShowUserLogin,
-    setUser,
-    axios,
-    navigate,
-    redirectAfterLogin,
-    setRedirectAfterLogin,
-  } = useAppContext();
+  setShowUserLogin,
+  setUser,
+  setCartItems,   // ✅ MISSING — THIS FIXES THE BUG
+  axios,
+  navigate,
+  redirectAfterLogin,
+  setRedirectAfterLogin,
+} = useAppContext();
+
 
   const [step, setStep] = useState("mobile"); // mobile | otp | name
   const [mobile, setMobile] = useState("");
@@ -116,17 +118,41 @@ const Login = () => {
   };
 
   /* ---------------- FINALIZE LOGIN ---------------- */
-  const finishLogin = (user) => {
-    setUser(user);
-    setShowUserLogin(false);
+const finishLogin = async (user) => {
+  // snapshot guest cart BEFORE login
+  const guestCart = JSON.parse(localStorage.getItem("guest_cart")) || {};
+  localStorage.setItem("pre_login_guest_cart", JSON.stringify(guestCart));
 
-    if (redirectAfterLogin) {
-      navigate(redirectAfterLogin);
-      setRedirectAfterLogin(null);
-    } else {
-      navigate("/");
-    }
-  };
+  setUser(user);
+
+  // ✅ IMMEDIATELY load DB cart into state
+  setCartItems(user.cartItems || {});
+
+  setShowUserLogin(false);
+
+  // 🔥 merge ONLY ONCE
+  if (!user.hasMergedGuestCart && Object.keys(guestCart).length > 0) {
+    const mergedCart = {
+      ...(user.cartItems || {}),
+      ...guestCart,
+    };
+
+    setCartItems(mergedCart); // 👈 update UI instantly
+
+    await axios.post("/api/cart/update", {
+      cartItems: mergedCart,
+    });
+
+    await axios.post("/api/cart/mark-cart-merged");
+
+    localStorage.removeItem("guest_cart");
+  }
+
+  navigate(redirectAfterLogin || "/");
+  setRedirectAfterLogin(null);
+};
+
+
 
   return (
     <div

@@ -5,24 +5,38 @@ import { useAppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
 const Navbar = () => {
   const [open, setOpen] = React.useState(false);
-  const { user, setUser, showUserLogin, setShowUserLogin, navigate, searchQuery, setSearchQuery, getCartCount, axios } =
-    useAppContext();
+  const {
+  user,
+  setUser,
+  setShowUserLogin,
+  navigate,
+  searchQuery,
+  setSearchQuery,
+  getCartCount,
+  axios,
+  setCartItems,
+} = useAppContext();
+
 
   const logout = async () => {
-    try {
-      const {data} = await axios.get('/api/user/logout')
-      if(data.success){
-        toast.success(data.message)
-        setUser(null);
-        navigate("/");
-      }else{
-        toast.error(data.message)
-      }
-    } catch (error) {
-      toast.error(error.message)
+  try {
+    const { data } = await axios.get("/api/user/logout");
+
+    if (data.success) {
+      const preLoginCart =
+        JSON.parse(localStorage.getItem("pre_login_guest_cart")) || {};
+
+      localStorage.setItem("guest_cart", JSON.stringify(preLoginCart));
+      localStorage.removeItem("pre_login_guest_cart");
+
+      setCartItems(preLoginCart);
+      setUser(null);
+      navigate("/");
     }
-    
-  };
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
 
   useEffect(()=>{
     if(searchQuery.length > 0){

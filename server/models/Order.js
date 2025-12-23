@@ -1,66 +1,59 @@
-import mongoose from "mongoose";
-
 const orderSchema = new mongoose.Schema(
   {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "user",
-    },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
 
     items: [
       {
-        product: {
-          type: mongoose.Schema.Types.ObjectId,
-          required: true,
-          ref: "product",
-        },
-        quantity: {
-          type: Number,
-          required: true,
-        },
+        product: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+        quantity: Number,
+        price: Number,
       },
     ],
 
-    amount: {
-      type: Number,
-      required: true,
-    },
-
-    address: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "address",
-    },
+    address: { type: mongoose.Schema.Types.ObjectId, ref: "address" },
 
     courier: {
-      name: { type: String },
-      price: { type: Number, default: 0 },
+      courierId: { type: mongoose.Schema.Types.ObjectId, ref: "courier" },
+      name: String,
+      price: Number,
+      minDays: Number,
+      maxDays: Number,
     },
 
-    coupon: {
-      code: { type: String },
-      discount: { type: Number, default: 0 },
+    payment: {
+      method: { type: String, enum: ["razorpay", "cod"] },
+      status: { type: String, enum: ["pending", "paid", "failed"] },
+      transactionId: String,
     },
 
-    status: {
-      type: String,
-      default: "Order Placed",
+    // 🔥 DELIVERY LIFECYCLE
+    delivery: {
+      status: {
+        type: String,
+        enum: [
+          "order_placed",
+          "processing",
+          "shipped",
+          "out_for_delivery",
+          "delivered",
+          "cancelled",
+        ],
+        default: "order_placed",
+      },
+
+      trackingId: { type: String },        // admin updates
+      trackingUrl: { type: String },       // optional
+      shippedAt: Date,
+      deliveredAt: Date,
     },
 
-    paymentType: {
-      type: String,
-      required: true,
-    },
-
-    isPaid: {
-      type: Boolean,
-      default: false,
-      required: true,
+    pricing: {
+      subtotal: Number,
+      tax: Number,
+      deliveryFee: Number,
+      discount: Number,
+      total: Number,
     },
   },
   { timestamps: true }
 );
-
-export default mongoose.models.order ||
-  mongoose.model("order", orderSchema);

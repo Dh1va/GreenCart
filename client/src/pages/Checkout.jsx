@@ -396,7 +396,7 @@ const Checkout = () => {
 
           <button
             onClick={applyCoupon}
-            className="text-primary text-sm font-medium"
+            className="text-primary text-sm font-medium cursor-pointer"
           >
             Apply
           </button>

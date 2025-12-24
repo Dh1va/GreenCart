@@ -335,11 +335,11 @@ const Checkout = () => {
           </div>
 
           {/* ================= DELIVERY ETA ================= */}
-<div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+<div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hidden md:block">
   {/* HEADER */}
   <div className="border-b border-gray-100 bg-gray-50/50 px-5 py-3">
     <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500">
-      2. Estimated Delivery
+       Estimated Delivery
     </h2>
   </div>
 
@@ -389,9 +389,9 @@ const Checkout = () => {
 
 
           {/* ================= DELIVERY INSTRUCTIONS ================= */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hidden md:block">
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-4">
-              2. Delivery Instructions
+               Delivery Instructions
             </h2>
             <textarea
               placeholder="E.g. Call before delivery, leave with security…"
@@ -400,25 +400,7 @@ const Checkout = () => {
             />
           </div>
 
-          {/* ================= TRUST BLOCK ================= */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: "Secure Payments", icon: "🔒" },
-              { label: "Easy Returns", icon: "📦" },
-              { label: "Verified Sellers", icon: "✅" },
-              { label: "Order Tracking", icon: "📍" },
-            ].map((item, idx) => (
-              <div
-                key={idx}
-                className="bg-white border border-gray-100 rounded-xl py-3 px-2 shadow-sm flex flex-col items-center gap-1 group hover:border-primary/30 transition-colors"
-              >
-                <span className="text-lg">{item.icon}</span>
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight text-center">
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
+          
         </motion.div>
 
         {/* RIGHT – SUMMARY */}

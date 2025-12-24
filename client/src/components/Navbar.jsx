@@ -1,48 +1,70 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { useAppContext } from "../context/AppContext";
+import CartDrawer from "../components/CartDrawer";
 import toast from "react-hot-toast";
 const Navbar = () => {
   const [open, setOpen] = React.useState(false);
+  const [openCart, setOpenCart] = useState(false);
   const {
-  user,
-  setUser,
-  setShowUserLogin,
-  navigate,
-  searchQuery,
-  setSearchQuery,
-  getCartCount,
-  axios,
-  setCartItems,
-} = useAppContext();
+    user,
+    setUser,
+    setShowUserLogin,
+    navigate,
+    searchQuery,
+    setSearchQuery,
+    getCartCount,
+    axios,
+    setCartItems,
+    cartItems,
+    authChecked,
+  } = useAppContext();
 
 
   const logout = async () => {
-  try {
-    const { data } = await axios.get("/api/user/logout");
+    try {
+      const { data } = await axios.get("/api/user/logout");
 
-    if (data.success) {
-      const preLoginCart =
-        JSON.parse(localStorage.getItem("pre_login_guest_cart")) || {};
+      if (data.success) {
+        const preLoginCart =
+          JSON.parse(localStorage.getItem("pre_login_guest_cart")) || {};
 
-      localStorage.setItem("guest_cart", JSON.stringify(preLoginCart));
-      localStorage.removeItem("pre_login_guest_cart");
+        localStorage.setItem("guest_cart", JSON.stringify(preLoginCart));
+        localStorage.removeItem("pre_login_guest_cart");
 
-      setCartItems(preLoginCart);
-      setUser(null);
-      navigate("/");
+        setCartItems(preLoginCart);
+        setUser(null);
+        navigate("/");
+      }
+    } catch (err) {
+      toast.error(err.message);
     }
-  } catch (err) {
-    toast.error(err.message);
-  }
-};
+  };
 
-  useEffect(()=>{
-    if(searchQuery.length > 0){
-      navigate("/products")
+  const prevCount = useRef(0);
+  const didInit = useRef(false);
+
+  useEffect(() => {
+    if (!authChecked) return;
+
+    const current = getCartCount();
+
+    // Skip first run after hydration
+    if (!didInit.current) {
+      prevCount.current = current;
+      didInit.current = true;
+      return;
     }
-  },[searchQuery])
+
+    // Open cart ONLY on increase after init
+    if (current > prevCount.current) {
+      setOpenCart(true);
+    }
+
+    prevCount.current = current;
+  }, [cartItems, authChecked]);
+
   return (
     <nav className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-300 bg-white relative transition-all z-20">
       <NavLink to={"/"} onClick={() => setOpen(false)}>
@@ -57,7 +79,7 @@ const Navbar = () => {
 
         <div className="hidden lg:flex items-center text-sm gap-2 border border-gray-300 px-3 rounded-full">
           <input
-            onChange={(e)=>setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="py-1.5 w-full bg-transparent outline-none placeholder-gray-500"
             type="text"
             placeholder="Search products"
@@ -66,7 +88,7 @@ const Navbar = () => {
         </div>
 
         <div
-          onClick={() => navigate("/cart")}
+          onClick={() => setOpenCart(true)}
           className="relative cursor-pointer"
         >
           <img
@@ -115,7 +137,7 @@ const Navbar = () => {
 
 
       <div className="flex items-center gap-6 sm:hidden">
-      <div
+        <div
           onClick={() => navigate("/cart")}
           className="relative cursor-pointer"
         >
@@ -142,9 +164,8 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {open && (
         <div
-          className={`${
-            open ? "flex" : "hidden"
-          } absolute top-[60px] left-0 w-full bg-white shadow-md py-4 flex-col items-start gap-2 px-5 text-sm md:hidden`}
+          className={`${open ? "flex" : "hidden"
+            } absolute top-[60px] left-0 w-full bg-white shadow-md py-4 flex-col items-start gap-2 px-5 text-sm md:hidden`}
         >
           <NavLink to={"/"} onClick={() => setOpen(false)} className="block">
             Home
@@ -186,6 +207,10 @@ const Navbar = () => {
           )}
         </div>
       )}
+      <CartDrawer
+        open={openCart}
+        onClose={() => setOpenCart(false)}
+      />
     </nav>
   );
 };

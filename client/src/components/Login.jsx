@@ -5,14 +5,16 @@ import OtpInput from "./OtpInput";
 
 const Login = () => {
   const {
-  setShowUserLogin,
-  setUser,
-  setCartItems,   // ✅ MISSING — THIS FIXES THE BUG
-  axios,
-  navigate,
-  redirectAfterLogin,
-  setRedirectAfterLogin,
-} = useAppContext();
+    setShowUserLogin,
+    setUser,
+    setCartItems,   // ✅ MISSING — THIS FIXES THE BUG
+    axios,
+    navigate,
+    redirectAfterLogin,
+    setRedirectAfterLogin,
+     suppressCartAutoOpen,
+  setSuppressCartAutoOpen
+  } = useAppContext();
 
 
   const [step, setStep] = useState("mobile"); // mobile | otp | name
@@ -117,40 +119,33 @@ const Login = () => {
     }
   };
 
-  /* ---------------- FINALIZE LOGIN ---------------- */
-const finishLogin = async (user) => {
-  // snapshot guest cart BEFORE login
+ const finishLogin = async (user) => {
   const guestCart = JSON.parse(localStorage.getItem("guest_cart")) || {};
-  localStorage.setItem("pre_login_guest_cart", JSON.stringify(guestCart));
 
+  setSuppressCartAutoOpen(true);
   setUser(user);
 
-  // ✅ IMMEDIATELY load DB cart into state
-  setCartItems(user.cartItems || {});
+  let finalCart = user.cartItems || {};
 
-  setShowUserLogin(false);
-
-  // 🔥 merge ONLY ONCE
   if (!user.hasMergedGuestCart && Object.keys(guestCart).length > 0) {
-    const mergedCart = {
-      ...(user.cartItems || {}),
-      ...guestCart,
-    };
-
-    setCartItems(mergedCart); // 👈 update UI instantly
-
-    await axios.post("/api/cart/update", {
-      cartItems: mergedCart,
-    });
-
+    finalCart = { ...finalCart, ...guestCart };
     await axios.post("/api/cart/mark-cart-merged");
-
     localStorage.removeItem("guest_cart");
   }
 
-  navigate(redirectAfterLogin || "/");
+  setCartItems(finalCart);
+  setShowUserLogin(false);
+
+  // 🔐 ROLE-BASED REDIRECT (THIS WAS MISSING)
+  if (user.role === "admin") {
+    navigate("/admin");
+  } else {
+    navigate(redirectAfterLogin || "/");
+  }
+
   setRedirectAfterLogin(null);
 };
+
 
 
 

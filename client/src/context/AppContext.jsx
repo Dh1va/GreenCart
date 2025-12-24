@@ -15,28 +15,16 @@ export const AppContextProvider = ({ children }) => {
     const currency = import.meta.env.VITE_CURRENCY;
     const navigate = useNavigate()
     const [user, setUser] = useState(null)
-    const [isSeller, setIsSeller] = useState(false)
     const [showUserLogin, setShowUserLogin] = useState(false)
     const [products, setProducts] = useState([])
     const [cartItems, setCartItems] = useState({})
     const [searchQuery, setSearchQuery] = useState("");
     const [redirectAfterLogin, setRedirectAfterLogin] = useState(null);
     const [authChecked, setAuthChecked] = useState(false);
+    const [suppressCartAutoOpen, setSuppressCartAutoOpen] = useState(false);
 
 
-    //Fetch Seller Status
-    const fetchSeller = async () => {
-        try {
-            const { data } = await axios.get('/api/seller/is-auth');
-            if (data.success) {
-                setIsSeller(true)
-            } else {
-                setIsSeller(false)
-            }
-        } catch (error) {
-            setIsSeller(false)
-        }
-    }
+    
 
 
     const fetchUser = async () => {
@@ -184,7 +172,7 @@ export const AppContextProvider = ({ children }) => {
         }
         fetchUser()
         fetchProducts()
-        fetchSeller()
+      
     }, [])
 
     //update cart in backend whenever cart items change
@@ -250,7 +238,7 @@ export const AppContextProvider = ({ children }) => {
 
 
 
-    const value = { navigate, user, setUser, isSeller, setIsSeller, showUserLogin, setShowUserLogin, products, currency, addToCart, updateCartItem, removeFromCart, cartItems, searchQuery, setSearchQuery, getCartCount, getCartAmount, axios, fetchProducts, setCartItems, redirectAfterLogin, setRedirectAfterLogin, mergeGuestCart, authChecked, setAuthChecked, increaseQty, decreaseQty, removeItemCompletely }
+    const value = { navigate, user, setUser, showUserLogin, setShowUserLogin, products, currency, addToCart, updateCartItem, removeFromCart, cartItems, searchQuery, setSearchQuery, getCartCount, getCartAmount, axios, fetchProducts, setCartItems, redirectAfterLogin, setRedirectAfterLogin, mergeGuestCart, authChecked, setAuthChecked, increaseQty, decreaseQty, removeItemCompletely, suppressCartAutoOpen, setSuppressCartAutoOpen }
 
     return <Appcontext.Provider value={value}>
         {children}

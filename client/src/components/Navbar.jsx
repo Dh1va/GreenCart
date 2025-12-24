@@ -12,13 +12,14 @@ const Navbar = () => {
     setUser,
     setShowUserLogin,
     navigate,
-    searchQuery,
     setSearchQuery,
     getCartCount,
     axios,
     setCartItems,
     cartItems,
     authChecked,
+    suppressCartAutoOpen,
+    setSuppressCartAutoOpen,
   } = useAppContext();
 
 
@@ -45,25 +46,32 @@ const Navbar = () => {
   const prevCount = useRef(0);
   const didInit = useRef(false);
 
-  useEffect(() => {
-    if (!authChecked) return;
+useEffect(() => {
+  if (!authChecked) return;
 
-    const current = getCartCount();
+  const current = getCartCount();
 
-    // Skip first run after hydration
-    if (!didInit.current) {
-      prevCount.current = current;
-      didInit.current = true;
-      return;
-    }
-
-    // Open cart ONLY on increase after init
-    if (current > prevCount.current) {
-      setOpenCart(true);
-    }
-
+  // Initial hydration
+  if (!didInit.current) {
     prevCount.current = current;
-  }, [cartItems, authChecked]);
+    didInit.current = true;
+    return;
+  }
+
+  // 🔕 ignore programmatic cart updates (login/logout)
+  if (suppressCartAutoOpen) {
+    prevCount.current = current;
+    setSuppressCartAutoOpen(false);
+    return;
+  }
+
+  // ✅ ONLY real user adds
+  if (current > prevCount.current) {
+    setOpenCart(true);
+  }
+
+  prevCount.current = current;
+}, [cartItems, authChecked, suppressCartAutoOpen]);
 
   return (
     <nav className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-300 bg-white relative transition-all z-20">

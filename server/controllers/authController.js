@@ -31,11 +31,11 @@ export const sendOtp = async (req, res) => {
 
     if (
       existing &&
-      existing.createdAt > new Date(Date.now() - 10 * 60 * 1000)
+      existing.createdAt > new Date(Date.now() - 2 * 60 * 1000)
     ) {
       return res.json({
         success: false,
-        message: "Too many OTP requests. Please try again after 10 minutes.",
+        message: "Too many OTP requests. Please try again after 2 minutes.",
       });
     }
 

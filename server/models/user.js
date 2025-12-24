@@ -4,7 +4,11 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String },
     mobile: { type: String, required: true, unique: true },
-    role: { type: String, default: "user" },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
     cartItems: { type: Object, default: {} },
     hasMergedGuestCart: {
       type: Boolean,

@@ -1,19 +1,43 @@
+import mongoose from "mongoose";
+
 const orderSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      required: true,
+    },
 
     items: [
       {
-        product: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
-        quantity: Number,
-        price: Number,
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "product",
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+        price: {
+          type: Number,
+          required: true,
+        },
       },
     ],
 
-    address: { type: mongoose.Schema.Types.ObjectId, ref: "address" },
+    address: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "address",
+      required: true,
+    },
 
     courier: {
-      courierId: { type: mongoose.Schema.Types.ObjectId, ref: "courier" },
+      courierId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "courier",
+      },
       name: String,
       price: Number,
       minDays: Number,
@@ -21,12 +45,19 @@ const orderSchema = new mongoose.Schema(
     },
 
     payment: {
-      method: { type: String, enum: ["razorpay", "cod"] },
-      status: { type: String, enum: ["pending", "paid", "failed"] },
+      method: {
+        type: String,
+        enum: ["razorpay", "cod"],
+        required: true,
+      },
+      status: {
+        type: String,
+        enum: ["pending", "paid", "failed"],
+        default: "pending",
+      },
       transactionId: String,
     },
 
-    // 🔥 DELIVERY LIFECYCLE
     delivery: {
       status: {
         type: String,
@@ -40,20 +71,21 @@ const orderSchema = new mongoose.Schema(
         ],
         default: "order_placed",
       },
-
-      trackingId: { type: String },        // admin updates
-      trackingUrl: { type: String },       // optional
+      trackingId: String,
+      trackingUrl: String,
       shippedAt: Date,
       deliveredAt: Date,
     },
 
     pricing: {
-      subtotal: Number,
-      tax: Number,
-      deliveryFee: Number,
-      discount: Number,
-      total: Number,
+      subtotal: { type: Number, required: true },
+      tax: { type: Number, default: 0 },
+      deliveryFee: { type: Number, default: 0 },
+      discount: { type: Number, default: 0 },
+      total: { type: Number, required: true },
     },
   },
   { timestamps: true }
 );
+
+export default mongoose.model("order", orderSchema);

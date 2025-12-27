@@ -9,7 +9,7 @@ const Orders = () => {
 
     const fetchOrders = async () => {
        try {
-        const {data} = await axios.get('/api/order/seller')
+        const {data} = await axios.get('/api/order/admin')
         if(data.success){
             setOrders(data.orders)
         }else{

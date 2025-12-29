@@ -8,7 +8,7 @@ const orderRouter = express.Router();
 
 orderRouter.post('/cod', authUser, placeOrderCOD)
 orderRouter.get('/user', authUser, getUserOrders)
-router.get("/admin", authUser, adminOnly, getAllOrders);
+orderRouter.get("/admin", authUser, adminOnly, getAllOrders);
 
 
 //  Razorpay routes

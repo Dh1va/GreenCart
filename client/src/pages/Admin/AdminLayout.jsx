@@ -21,12 +21,18 @@ const AdminLayout = () => {
     }
   };
 
-  const sidebarLinks = [
-    { name: "Add Product", path: "/admin", icon: assets.add_icon },
-    { name: "Products", path: "/admin/products", icon: assets.product_list_icon },
-    { name: "Orders", path: "/admin/orders", icon: assets.order_icon },
-    { name: "Users", path: "/admin/users", icon: assets.user_icon },
-  ];
+ const sidebarLinks = [
+  { name: "Dashboard", path: "/admin/dashboard" },
+  { name: "Orders", path: "/admin/orders" },
+  { name: "Products", path: "/admin/products" },
+  { name: "Categories", path: "/admin/categories" },
+  { name: "Customers", path: "/admin/users" },
+  { name: "Coupons", path: "/admin/coupons" },
+  { name: "Shipping", path: "/admin/shipping" },
+  { name: "Invoices", path: "/admin/invoices" },
+  { name: "Reports", path: "/admin/reports" },
+  { name: "Settings", path: "/admin/settings" },
+];
 
   return (
     <>

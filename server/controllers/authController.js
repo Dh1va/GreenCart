@@ -9,7 +9,6 @@ export const sendOtp = async (req, res) => {
   try {
     const { mobile } = req.body;
 
-    // 🇮🇳 Indian mobile validation (starts with 6–9)
     if (!/^[6-9]\d{9}$/.test(mobile)) {
       return res.json({
         success: false,
@@ -17,25 +16,21 @@ export const sendOtp = async (req, res) => {
       });
     }
 
-    const existing = await Otp.findOne({ mobile });
-
-    if (
-      existing &&
-      existing.lastSentAt > new Date(Date.now() - 30 * 1000)
-    ) {
+    // 🔥 DEV MODE — SKIP OTP COMPLETELY
+    if (process.env.NODE_ENV === "development") {
       return res.json({
-        success: false,
-        message: "Please wait before requesting another OTP",
+        success: true,
+        message: "OTP skipped in development",
       });
     }
 
-    if (
-      existing &&
-      existing.createdAt > new Date(Date.now() - 2 * 60 * 1000)
-    ) {
+    /* ---------- PRODUCTION OTP FLOW ---------- */
+    const existing = await Otp.findOne({ mobile });
+
+    if (existing && existing.lastSentAt > new Date(Date.now() - 30 * 1000)) {
       return res.json({
         success: false,
-        message: "Too many OTP requests. Please try again after 2 minutes.",
+        message: "Please wait before requesting another OTP",
       });
     }
 
@@ -59,11 +54,44 @@ export const sendOtp = async (req, res) => {
   }
 };
 
+
 /* VERIFY OTP */
 export const verifyOtp = async (req, res) => {
   try {
     const { mobile, otp, name } = req.body;
 
+    /* 🔥 DEV MODE — DIRECT LOGIN */
+    if (process.env.NODE_ENV === "development") {
+      let user = await User.findOne({ mobile });
+
+      if (!user) {
+        user = await User.create({
+          mobile,
+          name: name || "Dev User",
+        });
+      }
+
+      const token = jwt.sign(
+        { id: user._id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.json({
+        success: true,
+        user,
+        devBypass: true,
+      });
+    }
+
+    /* ---------- PRODUCTION OTP FLOW ---------- */
     const record = await Otp.findOne({ mobile });
     if (!record) {
       return res.json({ success: false, message: "OTP expired" });
@@ -74,41 +102,29 @@ export const verifyOtp = async (req, res) => {
       return res.json({ success: false, message: "OTP expired" });
     }
 
-    if (record.attempts >= 5) {
-      return res.json({
-        success: false,
-        message: "Too many wrong attempts. Try later.",
-      });
-    }
-
     const isValid = await bcrypt.compare(otp, record.otpHash);
     if (!isValid) {
-      record.attempts += 1;
-      await record.save();
       return res.json({ success: false, message: "Invalid OTP" });
     }
 
     let user = await User.findOne({ mobile });
-
-    // 🆕 FIRST TIME USER → NAME REQUIRED
     if (!user) {
-      if (!name || name.trim().length < 2) {
+      if (!name) {
         return res.json({
           success: false,
           requireName: true,
-          message: "Name required for first-time login",
         });
       }
-
-      user = await User.create({
-        mobile,
-        name: name.trim(),
-      });
+      user = await User.create({ mobile, name });
     }
 
     await Otp.deleteMany({ mobile });
 
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET,{ expiresIn: "7d" });
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -117,14 +133,11 @@ export const verifyOtp = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return res.json({
-      success: true,
-      user,
-      hasMergedGuestCart: user.hasMergedGuestCart
-    });
+    res.json({ success: true, user });
   } catch (err) {
-    return res.json({ success: false, message: err.message });
+    res.json({ success: false, message: err.message });
   }
 };
+
 
 

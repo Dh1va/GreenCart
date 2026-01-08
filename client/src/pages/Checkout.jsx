@@ -77,75 +77,86 @@ const Checkout = () => {
     if (user) fetchAddresses();
   }, [user]);
 
-  /* ---------------- ONLINE PAYMENT ONLY ---------------- */
   const placeOrder = async () => {
-    if (!selectedAddress) {
-      toast.error("Please select an address");
+  if (!selectedAddress) {
+    toast.error("Please select an address");
+    return;
+  }
+
+  if (cartArray.length === 0) {
+    toast.error("Your cart is empty");
+    return;
+  }
+
+  try {
+    const { data } = await axios.post("/api/order/cod", {
+      items: cartArray.map(i => ({
+        product: i._id,
+        quantity: i.quantity,
+      })),
+      address: selectedAddress, // contains _id
+      courier: {
+        name: selectedCourier.name,
+        price: selectedCourier.price,
+      },
+    });
+
+    if (!data.success) {
+      toast.error(data.message);
       return;
     }
 
-    if (cartArray.length === 0) {
-      toast.error("Your cart is empty");
-      return;
-    }
+    toast.success("Order placed successfully");
+    setCartItems({});
+    navigate("/my-orders");
 
-    try {
-      const { data } = await axios.post("/api/order/razorpay/order", {
-        items: cartArray.map((i) => ({
+  } catch (error) {
+    toast.error(error.message);
+  }
+};
+
+const placeOnlineOrder = async () => {
+  const { data } = await axios.post("/api/order/razorpay/order", {
+    items: cartArray.map(i => ({
+      product: i._id,
+      quantity: i.quantity,
+    })),
+    addressId: selectedAddress._id,
+    courier: {
+      name: selectedCourier.name,
+      price: selectedCourier.price,
+    },
+  });
+
+  if (!data.success) {
+    toast.error(data.message);
+    return;
+  }
+
+  const options = {
+    key: data.key,
+    amount: data.amount * 100,
+    currency: "INR",
+    order_id: data.order.id,
+
+    handler: async (response) => {
+      await axios.post("/api/order/razorpay/verify", {
+        ...response,
+        items: cartArray.map(i => ({
           product: i._id,
           quantity: i.quantity,
         })),
         addressId: selectedAddress._id,
-        courier: {
-          name: selectedCourier.name,
-          price: selectedCourier.price,
-        },
       });
 
-      if (!data.success) {
-        toast.error(data.message || "Payment initiation failed");
-        return;
-      }
-
-      const { order, key } = data;
-
-      const options = {
-        key,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Your Store",
-        description: "Order Payment",
-        order_id: order.id,
-
-        handler: async function (response) {
-          const verify = await axios.post("/api/order/razorpay/verify", {
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-            items: cartArray.map((i) => ({
-              product: i._id,
-              quantity: i.quantity,
-            })),
-            addressId: selectedAddress._id,
-          });
-
-          if (verify.data.success) {
-            toast.success("Payment successful");
-            setCartItems({});
-            navigate("/my-orders");
-          } else {
-            toast.error(verify.data.message);
-          }
-        },
-
-        theme: { color: "#3399cc" },
-      };
-
-      new window.Razorpay(options).open();
-    } catch (error) {
-      toast.error(error.message);
-    }
+      toast.success("Payment successful");
+      setCartItems({});
+      navigate("/my-orders");
+    },
   };
+
+  new window.Razorpay(options).open();
+};
 
   //Coupon apply
   const applyCoupon = async () => {

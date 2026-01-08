@@ -24,6 +24,9 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
 
+  const DISABLE_OTP = import.meta.env.VITE_DISABLE_OTP === "true";
+
+
   const otpValue = otp.join("");
 
   /* ---------------- RESEND TIMER ---------------- */
@@ -36,61 +39,135 @@ const Login = () => {
   }, [resendTimer]);
 
   /* ---------------- SEND OTP ---------------- */
+  // const sendOtp = async () => {
+  //   if (!/^[6-9]\d{9}$/.test(mobile)) {
+  //     toast.error("Enter valid 10-digit mobile number");
+  //     return;
+  //   }
+
+  //   try {
+  //     setLoading(true);
+  //     const { data } = await axios.post("/api/auth/send-otp", { mobile });
+
+  //     if (data.success) {
+  //       toast.success("OTP sent");
+  //       setStep("otp");
+  //       setOtp(["", "", "", "", "", ""]);
+  //       setResendTimer(30);
+  //     } else {
+  //       toast.error(data.message);
+  //     }
+  //   } catch (err) {
+  //     toast.error(err.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const sendOtp = async () => {
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
-      toast.error("Enter valid 10-digit mobile number");
-      return;
-    }
+  if (!/^[6-9]\d{9}$/.test(mobile)) {
+    toast.error("Enter valid mobile number");
+    return;
+  }
 
-    try {
-      setLoading(true);
-      const { data } = await axios.post("/api/auth/send-otp", { mobile });
+  try {
+    setLoading(true);
 
-      if (data.success) {
-        toast.success("OTP sent");
-        setStep("otp");
-        setOtp(["", "", "", "", "", ""]);
-        setResendTimer(30);
-      } else {
-        toast.error(data.message);
-      }
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* ---------------- VERIFY OTP ---------------- */
-  const verifyOtp = async () => {
-    if (otpValue.length !== 6) {
-      toast.error("Enter 6-digit OTP");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const { data } = await axios.post("/api/auth/verify-otp", {
-        mobile,
-        otp: otpValue,
-      });
-
-      if (data.requireName) {
-        setStep("name");
-        return;
-      }
+    // 🔥 DEV MODE — DIRECT LOGIN (NO OTP UI)
+    if (import.meta.env.VITE_DISABLE_OTP === "true") {
+      const { data } = await axios.post("/api/auth/verify-otp", { mobile });
 
       if (data.success) {
         finishLogin(data.user);
       } else {
         toast.error(data.message);
       }
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
+      return; // ⛔ STOP HERE — NO OTP STEP
     }
-  };
+
+    // 🚀 PRODUCTION FLOW
+    const { data } = await axios.post("/api/auth/send-otp", { mobile });
+
+    if (data.success) {
+      toast.success("OTP sent");
+      setStep("otp"); // ✅ only in production
+      setOtp(["", "", "", "", "", ""]);
+      setResendTimer(30);
+    } else {
+      toast.error(data.message);
+    }
+  } catch (err) {
+    toast.error(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+
+  /* ---------------- VERIFY OTP ---------------- */
+  // const verifyOtp = async () => {
+  //   if (otpValue.length !== 6) {
+  //     toast.error("Enter 6-digit OTP");
+  //     return;
+  //   }
+
+  //   try {
+  //     setLoading(true);
+  //     const { data } = await axios.post("/api/auth/verify-otp", {
+  //       mobile,
+  //       otp: otpValue,
+  //     });
+
+  //     if (data.requireName) {
+  //       setStep("name");
+  //       return;
+  //     }
+
+  //     if (data.success) {
+  //       finishLogin(data.user);
+  //     } else {
+  //       toast.error(data.message);
+  //     }
+  //   } catch (err) {
+  //     toast.error(err.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const verifyOtp = async () => {
+  const finalOtp = DISABLE_OTP ? "123456" : otpValue;
+
+  if (finalOtp.length !== 6) {
+    toast.error("Enter 6-digit OTP");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    const { data } = await axios.post("/api/auth/verify-otp", {
+      mobile,
+      otp: finalOtp,
+    });
+
+    if (data.requireName) {
+      setStep("name");
+      return;
+    }
+
+    if (data.success) {
+      finishLogin(data.user);
+    } else {
+      toast.error(data.message);
+    }
+  } catch (err) {
+    toast.error(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   /* ---------------- SUBMIT NAME ---------------- */
   const submitName = async () => {

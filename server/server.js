@@ -17,6 +17,8 @@ import profileRouter from "./routes/profileRoute.js";
 import courierRouter from "./routes/courierRoute.js";
 import couponRouter from "./routes/couponRoute.js";
 
+import adminOrderRouter from "./routes/adminOrderRoute.js";
+
 const app = express();
 const port = process.env.PORT || 4000;
 
@@ -60,6 +62,7 @@ app.use("/api/admin", adminUserRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/courier", courierRouter);
 app.use("/api/coupon", couponRouter);
+app.use("/api/admin", adminOrderRouter);
 // OTP cleanup cron
 startOtpCleanup();
 

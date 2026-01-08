@@ -5,34 +5,29 @@ const MyOrders = () => {
   const [myOrders, setMyOrders] = useState([]);
   const { currency, axios, user } = useAppContext();
 
-//   const fetchMyOrders = async () => {
-//     try {
-//       const { data } = await axios.get("/api/order/user");
-//       if (data.success) {
-//         console.log("Orders from API:", data.orders);
-//         setMyOrders(data.orders);
-//       }
-//     } catch (error) {
-//       console.log("Error fetching orders:", error);
-//     }
-//   };
- 
-const fetchMyOrders = async () => {
-  try {
-    const { data } = await axios.get("/api/order/user", {
-      params: { userId: user._id },   // ✅ send userId here
-    });
+  //   const fetchMyOrders = async () => {
+  //     try {
+  //       const { data } = await axios.get("/api/order/user");
+  //       if (data.success) {
+  //         console.log("Orders from API:", data.orders);
+  //         setMyOrders(data.orders);
+  //       }
+  //     } catch (error) {
+  //       console.log("Error fetching orders:", error);
+  //     }
+  //   };
 
-    if (data.success) {
-      console.log("Orders from API:", data.orders);
-      setMyOrders(data.orders);
-    } else {
-      console.log("Error from API:", data.message);
+  const fetchMyOrders = async () => {
+    try {
+      const { data } = await axios.get("/api/order/user");
+
+      if (data.success) {
+        setMyOrders(data.orders);
+      }
+    } catch (error) {
+      console.log("Error fetching orders:", error);
     }
-  } catch (error) {
-    console.log("Error fetching orders:", error);
-  }
-};
+  };
 
   useEffect(() => {
     if (user) {
@@ -58,11 +53,9 @@ const fetchMyOrders = async () => {
         >
           <p className="flex justify-between md:items-center text-gray-400 md:font-medium max-md:flex-col">
             <span>Order Id: {order._id}</span>
-            <span>Payment: {order.paymentType}</span>
-            <span>
-              Total Amount: {currency}
-              {order.amount}
-            </span>
+            <span>Payment: {order.payment.method}</span>
+            <span>Total Amount: {currency}{order.pricing.total}</span>
+
           </p>
 
           {order.items?.map((item, idx) => {
@@ -75,9 +68,8 @@ const fetchMyOrders = async () => {
             return (
               <div
                 key={idx}
-                className={`relative bg-white text-gray-500/70 ${
-                  order.items.length !== idx + 1 && "border-b"
-                } border-gray-300 flex flex-col md:flex-row md:items-center justify-between p-4 py-5 md:gap-16 w-full max-w-4xl`}
+                className={`relative bg-white text-gray-500/70 ${order.items.length !== idx + 1 && "border-b"
+                  } border-gray-300 flex flex-col md:flex-row md:items-center justify-between p-4 py-5 md:gap-16 w-full max-w-4xl`}
               >
                 <div className="flex items-center mb-4 md:mb-0">
                   <div className="bg-primary/10 p-4 rounded-lg">
@@ -91,16 +83,45 @@ const fetchMyOrders = async () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col justify-center md:ml-8 mb-4 md:mb-0">
-                  <p>Quantity: {item.quantity || 1}</p>
-                  <p>Status: {order.status || "Pending"}</p>
+                <div className="flex flex-col justify-center md:ml-8 mb-4 md:mb-0 gap-1">
                   <p>
-                    Date:{" "}
+                    Delivery Status:{" "}
+                    <span className="font-medium capitalize">
+                      {order.delivery?.status.replaceAll("_", " ") || "pending"}
+                    </span>
+                  </p>
+
+                  <p>
+                    Payment Status:{" "}
+                    <span className="font-medium">
+                      {order.payment?.status || "pending"}
+                    </span>
+                  </p>
+
+                  {order.courier?.name && (
+                    <p>
+                      Courier:{" "}
+                      <span className="font-medium">{order.courier.name}</span>
+                    </p>
+                  )}
+
+                  {order.delivery?.trackingId && (
+                    <p>
+                      Tracking ID:{" "}
+                      <span className="font-medium">
+                        {order.delivery.trackingId}
+                      </span>
+                    </p>
+                  )}
+
+                  <p>
+                    Order Date:{" "}
                     {order.createdAt
                       ? new Date(order.createdAt).toLocaleDateString()
                       : "-"}
                   </p>
                 </div>
+
 
                 <p className="text-primary text-lg font-medium">
                   Amount: {currency}

@@ -1,6 +1,7 @@
 import Order from "../models/Order.js";
 import Product from "../models/product.js";
 import Coupon from "../models/Coupon.js";
+import Address from "../models/Address.js";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 
@@ -51,34 +52,68 @@ export const placeOrderCOD = async (req, res) => {
       return res.json({ success: false, message: "No items in order" });
     }
 
-    if (!address) {
+    if (!address?._id) {
       return res.json({ success: false, message: "Address required" });
     }
 
-    const amountData = await calculateAmount({
-      items,
-      courier,
-      coupon,
+    let subtotal = 0;
+    const orderItems = [];
+
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+      if (!product) {
+        return res.json({ success: false, message: "Product not found" });
+      }
+
+      subtotal += product.offerPrice * item.quantity;
+
+      orderItems.push({
+        product: product._id,
+        quantity: item.quantity,
+        price: product.offerPrice, // ✅ REQUIRED
+      });
+    }
+
+    const tax = Math.floor(subtotal * 0.02);
+    const deliveryFee = courier?.price || 0;
+    const discount = coupon?.discount || 0;
+    const total = subtotal + tax + deliveryFee - discount;
+
+    console.log("ORDER PAYLOAD", {
+      user: userId,
+      items: orderItems,
+      pricing: { subtotal, tax, deliveryFee, discount, total },
+      payment: { method: "cod" },
     });
 
     const order = await Order.create({
-      userId,
-      items,
-      amount: amountData.total,
-      address,
-      courier: courier || null,
-      coupon: coupon || null,
-      paymentType: "COD",
-      isPaid: false,
-      status: "Order Placed",
-    });
-
-    if (coupon?.code) {
-      await Coupon.findOneAndUpdate(
-        { code: coupon.code },
-        { $inc: { usedCount: 1 } }
-      );
+      user: userId, // ✅ REQUIRED
+      items: orderItems,
+      address: address._id, // ✅ ObjectId ONLY
+      courier: courier
+  ? {
+      courierId: courier._id || null,
+      name: courier.name,
+      price: courier.price,
+      minDays: courier.minDays,
+      maxDays: courier.maxDays,
     }
+  : null,
+      payment: {
+        method: "cod", // ✅ MUST MATCH ENUM
+        status: "pending",
+      },
+      pricing: {
+        subtotal, // ✅ REQUIRED
+        tax,
+        deliveryFee, // ✅ CORRECT FIELD
+        discount,
+        total, // ✅ REQUIRED
+      },
+      delivery: {
+        status: "order_placed",
+      },
+    });
 
     res.json({
       success: true,
@@ -91,92 +126,64 @@ export const placeOrderCOD = async (req, res) => {
   }
 };
 
+
+
+
 /* ------------------------------------------------
    CREATE RAZORPAY ORDER
-   POST /api/order/razorpay/order
 ------------------------------------------------- */
 export const createRazorpayOrder = async (req, res) => {
   try {
     const userId = req.userId;
     const { items, addressId, courier, coupon } = req.body;
 
-    if (!userId) {
-      return res.json({ success: false, message: "User not authenticated" });
-    }
-
-    if (!items || items.length === 0 || !addressId) {
+    if (!items || !addressId) {
       return res.json({
         success: false,
         message: "Items and address are required",
       });
     }
 
-    /* ---------------- CALCULATE SUBTOTAL ---------------- */
     let subtotal = 0;
-
     for (const item of items) {
       const product = await Product.findById(item.product);
       if (!product) {
-        return res.json({
-          success: false,
-          message: `Product not found: ${item.product}`,
-        });
+        return res.json({ success: false, message: "Product not found" });
       }
       subtotal += product.offerPrice * item.quantity;
     }
 
-    /* ---------------- ADD TAX ---------------- */
     const tax = Math.floor(subtotal * 0.02);
-
-    /* ---------------- ADD DELIVERY ---------------- */
     const deliveryCharge = courier?.price || 0;
-
-    /* ---------------- APPLY COUPON ---------------- */
     const couponDiscount = coupon?.discount || 0;
+    const finalAmount = subtotal + tax + deliveryCharge - couponDiscount;
 
-    /* ---------------- FINAL AMOUNT ---------------- */
-    const finalAmount =
-      subtotal + tax + deliveryCharge - couponDiscount;
-
-    /* ---------------- CREATE RAZORPAY ORDER ---------------- */
     const razorpayOrder = await razorpayInstance.orders.create({
-      amount: finalAmount * 100, // paise
+      amount: finalAmount * 100,
       currency: "INR",
       notes: {
         userId,
         addressId,
-        courier: courier?.name || "N/A",
-        deliveryCharge,
-        coupon: coupon?.code || "N/A",
       },
     });
 
-    return res.json({
+    res.json({
       success: true,
       order: razorpayOrder,
       amount: finalAmount,
-      breakdown: {
-        subtotal,
-        tax,
-        deliveryCharge,
-        couponDiscount,
-      },
       key: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error) {
     console.error("createRazorpayOrder error:", error);
-    return res.json({ success: false, message: error.message });
+    res.json({ success: false, message: error.message });
   }
 };
 
-
 /* ------------------------------------------------
-   VERIFY RAZORPAY PAYMENT
-   POST /api/order/razorpay/verify
+   VERIFY RAZORPAY PAYMENT (FIXED)
 ------------------------------------------------- */
 export const verifyRazorpayPayment = async (req, res) => {
   try {
-    const userId = req.userId;
     const {
       razorpay_order_id,
       razorpay_payment_id,
@@ -194,68 +201,102 @@ export const verifyRazorpayPayment = async (req, res) => {
       .digest("hex");
 
     if (expectedSignature !== razorpay_signature) {
-      return res.json({
-        success: false,
-        message: "Payment verification failed",
+      return res.json({ success: false, message: "Payment verification failed" });
+    }
+
+    let subtotal = 0;
+    const normalizedItems = [];
+
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+      if (!product) {
+        return res.json({ success: false, message: "Product not found" });
+      }
+
+      subtotal += product.offerPrice * item.quantity;
+
+      normalizedItems.push({
+        product: product._id,
+        quantity: item.quantity,
+        price: product.offerPrice,
       });
     }
 
-    const amountData = await calculateAmount({
-      items,
-      courier,
-      coupon,
-    });
+    const tax = Math.floor(subtotal * 0.02);
+    const deliveryFee = courier?.price || 0;
+    const discount = coupon?.discount || 0;
+    const total = subtotal + tax + deliveryFee - discount;
 
     const order = await Order.create({
-      userId,
-      items,
-      amount: amountData.total,
-      address: addressId,
-      courier: courier || null,
-      coupon: coupon || null,
-      paymentType: "Online",
-      isPaid: true,
-      status: "Order Placed",
-    });
-
-    if (coupon?.code) {
-      await Coupon.findOneAndUpdate(
-        { code: coupon.code },
-        { $inc: { usedCount: 1 } }
-      );
+      user: req.userId,
+      items: normalizedItems,
+      address: addressId, // ✅ ObjectId
+      courier: courier
+  ? {
+      courierId: courier._id || null,
+      name: courier.name,
+      price: courier.price,
+      minDays: courier.minDays,
+      maxDays: courier.maxDays,
     }
+  : null,
 
-    res.json({
-      success: true,
-      message: "Payment successful",
-      order,
+      payment: {
+        method: "razorpay", // ✅ enum match
+        status: "paid",
+        transactionId: razorpay_payment_id,
+      },
+
+      pricing: {
+        subtotal,
+        tax,
+        deliveryFee,
+        discount,
+        total,
+      },
     });
+
+    res.json({ success: true, order });
   } catch (error) {
-    console.error("Verify Payment Error:", error);
+    console.error(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId, status } = req.body;
+    await Order.findByIdAndUpdate(orderId, { "delivery.status": status });
+    res.json({ success: true, message: "Status Updated" });
+  } catch (error) {
     res.json({ success: false, message: error.message });
   }
 };
 
 /* ------------------------------------------------
    GET USER ORDERS
-   GET /api/order/user?userId=
 ------------------------------------------------- */
 export const getUserOrders = async (req, res) => {
   try {
-    const { userId } = req.query;
+    const orders = await Order.find({ user: req.userId })
+      .populate("items.product")
+      .populate("address")
+      .sort({ createdAt: -1 });
 
-    if (!userId) {
-      return res.json({
-        success: false,
-        message: "User ID required",
-      });
-    }
+    res.json({ success: true, orders });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
 
-    const orders = await Order.find({
-      userId,
-      $or: [{ paymentType: "COD" }, { isPaid: true }],
-    })
-      .populate("items.product address")
+
+/* ------------------------------------------------
+   GET ALL ORDERS (ADMIN)
+------------------------------------------------- */
+export const getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate("address") // Populate EVERYTHING first to test
+      .populate("items.product", "name")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, orders });
@@ -265,17 +306,41 @@ export const getUserOrders = async (req, res) => {
 };
 
 /* ------------------------------------------------
-   GET ALL ORDERS (ADMIN / SELLER)
+   ADMIN: UPDATE TRACKING
 ------------------------------------------------- */
-export const getAllOrders = async (req, res) => {
+export const updateOrderTracking = async (req, res) => {
   try {
-    const orders = await Order.find({
-      $or: [{ paymentType: "COD" }, { isPaid: true }],
-    })
-      .populate("items.product address")
-      .sort({ createdAt: -1 });
+    const { orderId, trackingId } = req.body;
 
-    res.json({ success: true, orders });
+    await Order.findByIdAndUpdate(
+      orderId,
+      {
+        "delivery.trackingId": trackingId,
+        "delivery.shippedAt": new Date(),
+      },
+      { new: true }
+    );
+
+    res.json({ success: true, message: "Tracking updated" });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+/* ------------------------------------------------
+   ADMIN: UPDATE PAYMENT STATUS
+------------------------------------------------- */
+export const updateOrderPayment = async (req, res) => {
+  try {
+    const { orderId, status } = req.body;
+
+    await Order.findByIdAndUpdate(
+      orderId,
+      { "payment.status": status },
+      { new: true }
+    );
+
+    res.json({ success: true, message: "Payment status updated" });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }

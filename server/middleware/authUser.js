@@ -1,28 +1,22 @@
-import 'dotenv/config.js';
 import jwt from "jsonwebtoken";
-import User from "../models/user.js";
+import "dotenv/config.js";
 
-const authUser = async (req, res, next) => {
-  const { token } = req.cookies;
-
-  if (!token) {
-    return res.status(401).json({ message: "Not authenticated" });
-  }
-
+const authUser = (req, res, next) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const token = req.cookies.token;
 
-    const user = await User.findById(decoded.id).select("role");
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
+    if (!token) {
+      return res.status(401).json({ success: false });
     }
 
-    req.userId = user._id;
-    req.userRole = user.role;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    req.userId = decoded.id;
+    req.user = decoded; // 🔥 REQUIRED FOR ADMIN
 
     next();
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
+  } catch {
+    return res.status(401).json({ success: false });
   }
 };
 

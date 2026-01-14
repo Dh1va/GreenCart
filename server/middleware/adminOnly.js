@@ -1,6 +1,10 @@
 const adminOnly = (req, res, next) => {
-  if (req.userRole !== "admin") {
-    return res.status(403).json({ message: "Admin access required" });
+   console.log("AUTH USER:", req.user);
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Admin access only",
+    });
   }
   next();
 };

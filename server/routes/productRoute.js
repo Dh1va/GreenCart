@@ -1,14 +1,54 @@
-import express from 'express';
-import { addProduct, changeStock, productById, productList } from '../controllers/productController.js';
-import multer from 'multer';
-import { upload } from '../configs/multer.js';
-import adminOnly from '../middleware/adminOnly.js';
+import express from "express";
+import {
+  addProduct,
+  
+  assignCategory,
+  
+  productById,
+  productList,
+  updateProduct,
+} from "../controllers/productController.js";
 
-const  productRouter = express.Router();
+import { upload } from "../configs/multer.js";
+import authUser from "../middleware/authUser.js";
+import adminOnly from "../middleware/adminOnly.js";
 
-productRouter.post('/add', upload.array(["images"]), adminOnly, addProduct);
-productRouter.get('/list', productList);
-productRouter.get('/id', productById);
-productRouter.post('/stock', adminOnly, changeStock);
+const productRouter = express.Router();
+
+/* =====================================================
+   ADMIN ONLY ROUTES
+   ===================================================== */
+
+// ➕ Add Product (ADMIN)
+productRouter.post(
+  "/add",
+  authUser,
+  adminOnly,
+  upload.array("images"),
+  addProduct
+);
+
+// ✏️ Update Product (ADMIN)
+productRouter.post(
+  "/update",
+  authUser,
+  adminOnly,
+  upload.array("images"),
+  updateProduct
+);
+
+productRouter.patch('/assign-category', adminOnly, assignCategory);
+
+
+
+/* =====================================================
+   PUBLIC / AUTH ROUTES
+   ===================================================== */
+
+// 📦 List Products (PUBLIC)
+productRouter.get("/list", productList);
+
+// 🔍 Single Product (PUBLIC)
+productRouter.post("/single", productById);
 
 export default productRouter;

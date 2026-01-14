@@ -1,3 +1,12 @@
-import multer from "multer";
+// configs/multer.js
+import multer from 'multer';
 
-export const upload = multer({storage: multer.diskStorage({})});
+// Use memory storage or disk storage. 
+// Standard disk storage is safest for simple uploads before sending to Cloudinary.
+const storage = multer.diskStorage({
+    filename: function(req, file, callback) {
+        callback(null, file.originalname);
+    }
+});
+
+export const upload = multer({ storage });

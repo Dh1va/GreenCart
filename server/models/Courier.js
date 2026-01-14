@@ -4,6 +4,7 @@ const courierSchema = new mongoose.Schema(
     name: { type: String, required: true },
 
     price: { type: Number, required: true },
+    chargePerItem: { type: Boolean, default: false },
 
     // ETA range in days (machine usable)
     minDays: { type: Number, required: true },

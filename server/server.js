@@ -1,10 +1,12 @@
-import cookieParser from "cookie-parser";
 import express from "express";
+import http from "http";
+import cookieParser from "cookie-parser";
 import cors from "cors";
-import connectDB from "./configs/db.js";
 import "dotenv/config.js";
 
+import connectDB from "./configs/db.js";
 import connectCloudinary from "./configs/cloudinary.js";
+
 import productRouter from "./routes/productRoute.js";
 import cartRouter from "./routes/cartRoute.js";
 import addressRouter from "./routes/addressRoute.js";
@@ -12,44 +14,68 @@ import orderRouter from "./routes/orderRoute.js";
 import authRouter from "./routes/authRoutes.js";
 import adminUserRouter from "./routes/adminUserRoute.js";
 import userRouter from "./routes/userRoute.js";
-import { startOtpCleanup } from "./cron/otpCleanup.js";
 import profileRouter from "./routes/profileRoute.js";
 import courierRouter from "./routes/courierRoute.js";
-import couponRouter from "./routes/couponRoute.js";
 
 import adminOrderRouter from "./routes/adminOrderRoute.js";
+import adminDashboardRouter from "./routes/adminDashboardRoute.js"; 
+import categoryRouter from "./routes/categoryRoute.js";
+import couponRouter from "./routes/couponRoute.js";
 
+
+import { startOtpCleanup } from "./cron/otpCleanup.js";
+import { Server } from "socket.io";
+import invoiceRouter from "./routes/adminInvoiceRoute.js";
+
+// ---------- INIT ----------
 const app = express();
+const server = http.createServer(app);
 const port = process.env.PORT || 4000;
 
-// DB & Cloudinary
+// ---------- DB ----------
 await connectDB();
 await connectCloudinary();
 
-// Allowed origins
+// ---------- MIDDLEWARE ----------
+app.use(express.json());
+app.use(cookieParser());
+
 const allowedOrigins = [
   "http://localhost:5173",
   "https://green-cart-silk-sigma.vercel.app",
 ];
 
-// Middleware
-app.use(express.json());
-app.use(cookieParser());
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: allowedOrigins,
     credentials: true,
   })
 );
 
-// Routes
+// ---------- SOCKET ----------
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
+});
+
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  console.log("🟢 Socket connected:", socket.id);
+
+  socket.on("join", ({ role, userId }) => {
+    if (role === "admin") socket.join("admins");
+    if (userId) socket.join(`user_${userId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔴 Socket disconnected:", socket.id);
+  });
+});
+
+// ---------- ROUTES ----------
 app.get("/", (req, res) => res.send("API is working"));
 
 app.use("/api/auth", authRouter);
@@ -58,14 +84,27 @@ app.use("/api/product", productRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/address", addressRouter);
 app.use("/api/order", orderRouter);
-app.use("/api/admin", adminUserRouter);
+app.use("/api/admin-users", adminUserRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/courier", courierRouter);
 app.use("/api/coupon", couponRouter);
-app.use("/api/admin", adminOrderRouter);
-// OTP cleanup cron
+app.use("/api/admin-orders", adminOrderRouter);
+app.use("/api/admin", adminDashboardRouter);
+app.use("/api/category", categoryRouter);
+app.use("/api/coupon", couponRouter);
+app.use("/api/admin-invoices", invoiceRouter);
+
+
+
+
+
+
+
+
+// ---------- CRON ----------
 startOtpCleanup();
 
-app.listen(port, () => {
+// ---------- START ----------
+server.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });

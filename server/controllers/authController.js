@@ -4,7 +4,9 @@ import User from "../models/user.js";
 import Otp from "../models/Otp.js";
 import { sendOtpSms } from "../utils/sendOtpSms.js";
 
-/* SEND OTP */
+/* =====================================================
+   SEND OTP
+   ===================================================== */
 export const sendOtp = async (req, res) => {
   try {
     const { mobile } = req.body;
@@ -16,7 +18,7 @@ export const sendOtp = async (req, res) => {
       });
     }
 
-    // 🔥 DEV MODE — SKIP OTP COMPLETELY
+    /* 🔥 DEV MODE — SKIP OTP */
     if (process.env.NODE_ENV === "development") {
       return res.json({
         success: true,
@@ -54,44 +56,50 @@ export const sendOtp = async (req, res) => {
   }
 };
 
-
-/* VERIFY OTP */
+/* =====================================================
+   VERIFY OTP (FINAL FIX)
+   ===================================================== */
 export const verifyOtp = async (req, res) => {
   try {
     const { mobile, otp, name } = req.body;
 
-    /* 🔥 DEV MODE — DIRECT LOGIN */
     if (process.env.NODE_ENV === "development") {
-      let user = await User.findOne({ mobile });
+  let user = await User.findOne({ mobile });
 
-      if (!user) {
-        user = await User.create({
-          mobile,
-          name: name || "Dev User",
-        });
-      }
+  if (!user) {
+    user = await User.create({
+      mobile,
+      name: name || "Dev User",
+      role: "user", // ✅ SAFE DEFAULT
+    });
+  }
 
-      const token = jwt.sign(
-        { id: user._id, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-      );
+  const token = jwt.sign(
+    {
+      id: user._id,
+      role: user.role, // 🔐 REAL ROLE FROM DB
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: false,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 
-      return res.json({
-        success: true,
-        user,
-        devBypass: true,
-      });
-    }
+  return res.json({
+    success: true,
+    user,
+    devBypass: true,
+  });
+}
 
-    /* ---------- PRODUCTION OTP FLOW ---------- */
+    /* =================================================
+       🚀 PRODUCTION MODE — OTP FLOW
+       ================================================= */
     const record = await Otp.findOne({ mobile });
     if (!record) {
       return res.json({ success: false, message: "OTP expired" });
@@ -108,20 +116,21 @@ export const verifyOtp = async (req, res) => {
     }
 
     let user = await User.findOne({ mobile });
+
     if (!user) {
       if (!name) {
-        return res.json({
-          success: false,
-          requireName: true,
-        });
+        return res.json({ success: false, requireName: true });
       }
-      user = await User.create({ mobile, name });
+      user = await User.create({ mobile, name, role: "user" });
     }
 
     await Otp.deleteMany({ mobile });
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      {
+        id: user._id,
+        role: user.role,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -134,10 +143,23 @@ export const verifyOtp = async (req, res) => {
     });
 
     res.json({ success: true, user });
+
   } catch (err) {
-    res.json({ success: false, message: err.message });
+    console.error("VERIFY OTP ERROR:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
+/* =====================================================
+   LOGOUT
+   ===================================================== */
+export const logout = async (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+    path: "/",
+  });
 
-
+  res.json({ success: true, message: "Logged out" });
+};

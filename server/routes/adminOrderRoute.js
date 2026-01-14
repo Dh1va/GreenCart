@@ -2,27 +2,25 @@ import express from "express";
 import {
   getAllOrders,
   updateOrderStatus,
-  updateOrderTracking,
   updateOrderPayment,
+  getOrderInvoice,
+  getShippingLabel,
+  createAdminOrder,
 } from "../controllers/orderController.js";
 
 import authUser from "../middleware/authUser.js";
 import adminOnly from "../middleware/adminOnly.js";
 
-const adminOrderRouter = express.Router();
+const router = express.Router();
 
-/* ---------------- ADMIN ORDER ROUTES ---------------- */
+/* ADMIN ORDERS */
+router.get("/orders", authUser, adminOnly, getAllOrders);
+router.post("/create", authUser, adminOnly, createAdminOrder);
+router.patch("/order/status", authUser, adminOnly, updateOrderStatus);
 
-// Get all orders
-adminOrderRouter.get("/orders", authUser, adminOnly, getAllOrders);
+router.patch("/order/payment", authUser, adminOnly, updateOrderPayment);
 
-// Update delivery status
-adminOrderRouter.patch("/order/status", authUser, adminOnly, updateOrderStatus);
+router.get("/order/invoice/:orderId", authUser, adminOnly, getOrderInvoice);
+router.get("/order/label/:orderId", authUser, adminOnly, getShippingLabel);
 
-// Update tracking ID
-adminOrderRouter.patch("/order/shipping", authUser, adminOnly, updateOrderTracking);
-
-// Update payment status
-adminOrderRouter.patch("/order/payment", authUser, adminOnly, updateOrderPayment);
-
-export default adminOrderRouter;
+export default router;

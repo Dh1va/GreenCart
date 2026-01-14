@@ -1,60 +1,134 @@
 import { v2 as cloudinary } from 'cloudinary';
 import Product from '../models/product.js';
 
-//add product : /api/product/add
-
+// Add Product
 export const addProduct = async (req, res) => {
-    try {
-        let productData = JSON.parse(req.body.productData);
-        const images = req.files
-        let imagesUrl = await Promise.all(
-            images.map(async (item)=>{
-                let result = await cloudinary.uploader.upload(item.path,{resource_type:'image'})
-                return result.secure_url
-            })
-        )
-        await Product.create({...productData, images: imagesUrl})
+  try {
+    let data = JSON.parse(req.body.productData);
 
-        res.json({success: true, message: 'Product added successfully'})
-    }catch (error) {
-        console.log(error);
-        res.status(500).json({success: false, message: 'Failed to add product'})
-    }
+    data.description = String(data.description || "");
+    data.stock = Number(data.stock || 0);
+    data.inStock = data.stock > 0;
+
+    // SKU auto-generate (see Part 3)
+    if (!data.sku) {
+  let prefix = "PRD";
+
+  if (Array.isArray(data.category) && data.category.length > 0) {
+    prefix = data.category[0]
+      .replace(/[^a-zA-Z]/g, "")
+      .slice(0, 3)
+      .toUpperCase();
+  }
+
+  const count = await Product.countDocuments();
+  data.sku = `${prefix}-${count + 1}`;
 }
 
-//get product : /api/product/list
 
+    const images = req.files || [];
+    const imagesUrl = await Promise.all(
+      images.map(img =>
+        cloudinary.uploader.upload(img.path).then(r => r.secure_url)
+      )
+    );
+
+    const product = new Product({ ...data, images: imagesUrl });
+    await product.save();
+
+    res.json({ success: true, message: "Product created" });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+};
+
+// Update Product
+export const updateProduct = async (req, res) => {
+  try {
+    let data = JSON.parse(req.body.productData);
+
+    data.description = String(data.description || "");
+    data.stock = Number(data.stock || 0);
+    data.inStock = data.stock > 0;
+
+    // AUTO-GENERATE SKU IF MISSING (OLD PRODUCTS)
+if (!data.sku) {
+  let prefix = "PRD";
+
+  if (Array.isArray(data.category) && data.category.length > 0) {
+    prefix = data.category[0]
+      .replace(/[^a-zA-Z]/g, "")
+      .slice(0, 3)
+      .toUpperCase();
+  }
+
+  const count = await Product.countDocuments();
+  data.sku = `${prefix}-${count + 1}`;
+}
+
+
+    const { id } = data;
+
+    let finalImages = data.images || [];
+
+    if (req.files?.length) {
+      const urls = await Promise.all(
+        req.files.map(f =>
+          cloudinary.uploader.upload(f.path).then(r => r.secure_url)
+        )
+      );
+      finalImages = [...finalImages, ...urls];
+    }
+
+    await Product.findByIdAndUpdate(id, {
+      ...data,
+      images: finalImages,
+    });
+
+    res.json({ success: true, message: "Product updated" });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+};
+
+// List Products
 export const productList = async (req, res) => {
     try {
-        const products = await Product.find()
-        res.json({success: true, products}) 
+        // Sort by newest first
+        const products = await Product.find({}).sort({ createdAt: -1 });
+        res.json({ success: true, products });
     } catch (error) {
         console.log(error);
-        res.status(500).json({success: false, message: 'Failed to fetch products'})
+        res.json({ success: false, message: error.message });
     }
 }
 
-//get product by id : /api/product/id
+// Get Single Product
 export const productById = async (req, res) => {
     try {
-        const {id} = req.body
-        const product = await Product.findById(id)
-        res.json({success: true, product})
+        const { id } = req.body;
+        const product = await Product.findById(id);
+        res.json({ success: true, product });
     } catch (error) {
         console.log(error);
-        res.status(500).json({success: false, message: 'Failed to fetch product'})
+        res.json({ success: false, message: error.message });
     }
 }
 
-//change product stock : /api/product/stock
-export const changeStock = async (req, res) => {
+//add product to category 
+export const assignCategory = async (req, res) => {
     try {
-        const {id, inStock} = req.body
-        await Product.findByIdAndUpdate(id, {inStock})
-        res.json({success: true, message: 'Product stock updated successfully'})
+        const { productId, newCategory } = req.body;
+        
+        if (!productId || !newCategory) {
+            return res.json({ success: false, message: "Missing details" });
+        }
+
+        await Product.findByIdAndUpdate(productId, { category: newCategory });
+        
+        res.json({ success: true, message: "Category updated successfully" });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({success: false, message: 'Failed to update product stock'})
+        res.json({ success: false, message: error.message });
     }
-}
+};
 

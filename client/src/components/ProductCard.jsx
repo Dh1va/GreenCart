@@ -1,55 +1,124 @@
-import React from "react";
-import { assets } from "../assets/assets";
+import React, { useState } from "react";
 import { useAppContext } from "../context/AppContext";
-const ProductCard = ({product}) => {
-    
-    const {currency, cartItems, addToCart, upadateCartItem, removeFromCart, navigate } = useAppContext()
-    
+import { 
+  Heart, 
+  ShoppingCart, 
+  Eye, 
+  Scale, 
+  ChevronLeft, 
+  ChevronRight 
+} from "lucide-react";
 
-    return product && (
+const ProductCard = ({ product }) => {
+  const {
+    currency,
+    addToCart,
+    navigate,
+    wishlist,
+    addToWishlist
+  } = useAppContext();
+
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const isWishlisted = Array.isArray(wishlist) && wishlist.includes(product._id);
+
+  const nextImage = (e) => {
+    e.stopPropagation();
+    if (product.images.length > 1) {
+      setCurrentImgIndex((prev) => (prev + 1) % product.images.length);
+    }
+  };
+
+  const prevImage = (e) => {
+    e.stopPropagation();
+    if (product.images.length > 1) {
+      setCurrentImgIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+    }
+  };
+
+  if (!product) return null;
+
+  const mainPrice = product.offerPrice && product.offerPrice > 0 ? product.offerPrice : product.price;
+  const oldPrice = product.offerPrice && product.offerPrice > 0 && product.offerPrice < product.price ? product.price : null;
+
+  // 👇 FUNCTION TO HANDLE NAVIGATION
+  const handleNavigate = () => {
+    navigate(`/product/${product._id}`); // ✅ FIXED: Changed 'products' to 'product' to match App.jsx
+    window.scrollTo(0, 0);
+  };
+
+  return (
+    <div className="group relative w-full max-w-[260px] mx-auto bg-white rounded-xl overflow-hidden">
+      
+      {/* --- Image Area --- */}
+      <div className="relative w-full aspect-square bg-gray-50 overflow-hidden">
         <div 
-         onClick={()=>{navigate(`/products/${product.category.toLowerCase()}/${product._id}`);scrollTo(0,0)}}
-         className="border border-gray-500/20 rounded-md md:px-4 px-3 py-2 bg-white min-w-56 max-w-56 w-full">
-            <div className="group cursor-pointer flex items-center justify-center px-2">
-                <img className="group-hover:scale-105 transition max-w-26 md:max-w-36" src={product.images[0]} alt={product.name} />
-            </div>
-            <div className="text-gray-500/60 text-sm">
-                <p>{product.category}</p>
-                <p className="text-gray-700 font-medium text-lg truncate w-full">{product.name}</p>
-                <div className="flex items-center gap-0.5">
-                    {Array(5).fill('').map((_, i) => (
-                       
-                            <img key={i} src={i < 4 ? assets.star_icon : assets.star_dull_icon} alt=""  className="md:w-3.5 w-3"/>
-                        
-                    ))}
-                    <p>(4)</p>
-                </div>
-                <div className="flex items-end justify-between mt-3">
-                    <p className="md:text-xl text-base font-medium text-primary"> 
-                       {currency}{product.offerPrice}{" "} <span className="text-gray-500/60 md:text-sm text-xs line-through">{currency}{product.price}</span>
-                    </p>
-                    <div onClick={(e)=>{e.stopPropagation()}}  className="text-primary">
-                        {!cartItems[product._id] ? (
-                            <button className="flex items-center justify-center gap-1 bg-primary/10 border border-primary/40 md:w-[80px] w-[64px] h-[34px] rounded text-primary cursor-pointer " onClick={() => addToCart(product._id)} >
-                                <img src={assets.cart_icon} alt="cart_icon" />
-                                Add
-                            </button>
-                        ) : (
-                            <div className="flex items-center justify-center gap-2 md:w-20 w-16 h-[34px] bg-primary/25 rounded select-none">
-                                <button onClick={() => {removeFromCart(product._id)}} className="cursor-pointer text-md px-2 h-full" >
-                                    -
-                                </button> 
-                                <span className="w-5 text-center">{cartItems[product._id]}</span>
-                                <button onClick={() => {addToCart(product._id)}} className="cursor-pointer text-md px-2 h-full" >
-                                    +
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+          onClick={handleNavigate} 
+          className="w-full h-full cursor-pointer flex items-center justify-center p-6"
+        >
+          <img
+            src={product.images[currentImgIndex] || "https://placehold.co/400"}
+            alt={product.name}
+            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
+          />
         </div>
-    );
+
+        {/* Top Right Action Buttons */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 ease-out z-10">
+          <button
+            onClick={(e) => { e.stopPropagation(); addToWishlist(product._id); }}
+            className={`p-2 rounded-full shadow-sm transition-colors ${isWishlisted ? "bg-red-50 text-red-500" : "bg-white text-[#1E2A5E] hover:bg-[#1E2A5E] hover:text-white"}`}
+          >
+            <Heart className={`w-4 h-4 ${isWishlisted ? "fill-current" : ""}`} />
+          </button>
+          
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleNavigate(); }}
+            className="p-2 bg-white text-[#1E2A5E] rounded-full shadow-sm hover:bg-[#1E2A5E] hover:text-white transition-colors"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Navigation Arrows */}
+        {product.images.length > 1 && (
+          <div className="absolute bottom-0 left-0 w-full flex justify-between px-2 pb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <button onClick={prevImage} className="w-7 h-7 flex items-center justify-center bg-white text-[#1E2A5E] rounded-full shadow-md hover:bg-[#1E2A5E] hover:text-white pointer-events-auto">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button onClick={nextImage} className="w-7 h-7 flex items-center justify-center bg-white text-[#1E2A5E] rounded-full shadow-md hover:bg-[#1E2A5E] hover:text-white pointer-events-auto">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* --- Product Info --- */}
+      <div className="text-center p-4">
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+          {product.brand || "Collection"} 
+        </p>
+
+        <h3 onClick={handleNavigate} className="text-[#1E2A5E] font-bold text-[15px] cursor-pointer hover:opacity-80 transition-opacity line-clamp-1 mb-2">
+          {product.name}
+        </h3>
+
+        <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="text-[#1E2A5E] font-bold text-lg">{currency}{mainPrice}</span>
+            {oldPrice && <span className="text-gray-400 text-xs line-through font-medium">{currency}{oldPrice}</span>}
+        </div>
+
+        <div>
+          <button 
+            onClick={() => addToCart(product._id)}
+            className="bg-[#1E2A5E] text-white text-md font-semibold py-2.5 px-6 rounded-lg shadow-sm hover:bg-[#151f42] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 mx-auto"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export default ProductCard
+export default ProductCard;

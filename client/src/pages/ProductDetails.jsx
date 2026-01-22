@@ -1,120 +1,196 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import { Link, useParams } from "react-router-dom";
-import { assets } from "../assets/assets";
 import ProductCard from "../components/ProductCard";
+import { 
+  Star, 
+  ShoppingCart, 
+  Truck, 
+  ShieldCheck, 
+  RotateCcw, 
+  Check 
+} from "lucide-react";
+
 const ProductDetails = () => {
+  const { products, currency, addToCart, navigate } = useAppContext();
+  const { id } = useParams();
 
-    const {products, navigate, currency, addToCart} = useAppContext()
-    const {id} = useParams()
+  const [product, setProduct] = useState(null);
+  const [mainImage, setMainImage] = useState("");
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
-    const[relatedProducts, setRelatedProducts] = useState([])
-    const [thumbnail, setThumbnail] = useState(null)
+  // 1. Fetch Product Data & Scroll to Top
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    
+    if (products.length > 0) {
+      const foundProduct = products.find((item) => item._id === id);
+      if (foundProduct) {
+        setProduct(foundProduct);
+        setMainImage(foundProduct.images[0]); 
+      }
+    }
+  }, [id, products]);
 
-    const product = products.find((item)=>item._id === id)
+  // 2. Logic for Related Products
+  useEffect(() => {
+    if (!product || products.length === 0) return;
 
-    useEffect(()=>{
-        if(products.length > 0){
-            let productsCopy = products.slice()
-            productsCopy = productsCopy.filter((item)=>product.category === item.category) 
-            setRelatedProducts(productsCopy.slice(0,5))
-            console.log("related products",relatedProducts);
-        }
+    // Handle string vs array category types
+    const currentCats = Array.isArray(product.category) ? product.category : [product.category];
 
-    },[products])
+    const related = products.filter((p) => {
+      if (p._id === product._id) return false;
+      
+      const pCats = Array.isArray(p.category) ? p.category : [p.category];
+      // Check if any category matches
+      return pCats.some((c) => currentCats.includes(c));
+    });
 
-    useEffect(()=>{
-        setThumbnail(product?.images[0] ? product.images[0] : null)
-    },[product])
+    setRelatedProducts(related.slice(0, 4));
+  }, [product, products]);
 
-    return product && (
-        <div className="mt-12">
-            <p>
-                <Link to={'/'}>Home</Link> /
-                <Link to={'/products'}> Products</Link> /
-                <Link to={`/products/${product.category.toLowerCase()}`}> {product.category}</Link> /
-                <span className="text-primary"> {product.name}</span>
-            </p>
+  if (!product) return <div className="h-screen flex items-center justify-center text-[#1E2A5E]">Loading...</div>;
 
-            <div className="flex flex-col md:flex-row gap-16 mt-4">
-                <div className="flex gap-3">
-                    <div className="flex flex-col gap-3">
-                        {product.images.map((image, index) => (
-                            <div key={index} onClick={() => setThumbnail(image)} className="border max-w-24 border-gray-500/30 rounded overflow-hidden cursor-pointer" >
-                                <img src={image} alt={`Thumbnail ${index + 1}`} />
-                            </div>
-                        ))}
-                    </div>
+  // Price Calculation
+  const currentPrice = product.offerPrice && product.offerPrice > 0 ? product.offerPrice : product.price;
+  const oldPrice = product.offerPrice && product.offerPrice > 0 && product.offerPrice < product.price ? product.price : null;
 
-                    <div className="border border-gray-500/30 max-w-100 rounded overflow-hidden">
-                        <img src={thumbnail} alt="Selected product" />
-                    </div>
-                </div>
-
-                <div className="text-sm w-full md:w-1/2">
-                    <h1 className="text-3xl font-medium">{product.name}</h1>
-
-                    <div className="flex items-center gap-0.5 mt-1">
-                        {Array(5).fill('').map((_, i) => (
-                               <img src={i<4 ? assets.star_icon : assets.star_dull_icon} alt="" className="md:w-4 w-3.5" />
-                            
-                        ))}
-                        <p className="text-base ml-2">(4)</p>
-                    </div>
-
-                    <div className="mt-6">
-                        <p className="text-gray-500/70 line-through">MRP: {currency}{product.price}</p>
-                        <p className="text-2xl font-medium">MRP: {currency}{product.offerPrice}</p>
-                        <span className="text-gray-500/70">(inclusive of all taxes)</span>
-                    </div>
-
-                    <p className="text-base font-medium mt-6">About Product</p>
-                    <ul className="list-disc ml-4 text-gray-500/70">
-                        {product.description.map((desc, index) => (
-                            <li key={index}>{desc}</li>
-                        ))}
-                    </ul>
-
-                    <div className="flex items-center mt-10 gap-4 text-base">
-                        <button
-                        onClick={()=>addToCart(product._id)} 
-                        className="w-full py-3.5 cursor-pointer font-medium bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition" >
-                            Add to Cart
-                        </button>
-                        <button 
-                         onClick={()=>{
-                            addToCart(product._id);
-                            navigate('/cart')
-                         }}
-                         className="w-full py-3.5 cursor-pointer font-medium bg-primary text-white hover:bg-primary-dull transition" >
-                            Buy now
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* related products */}
-            <div className="flex flex-col items-center mt-20">
-                <div className="flex flex-col items-center w-max">
-                    <p className="font-medium text-3xl">Related Products</p>
-                    <div className="w-20 h-0.5 bg-primary rounded-full mt-2"></div>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-6 mt-6 w-full ">
-                    {relatedProducts.filter((product)=>product.instock).map(
-                        (product, index)=>(
-                            <ProductCard key={index} product={product}/>
-                        )
-                    )}
-                </div>
-                <button onClick={()=>{
-                    navigate('/products');
-                    scrollTo(0,0)
-                }} className="mx-auto cursor-pointer px-12 my-16 py-2.5 border rounded text-primary hover:bg-primary/10 transition">See more</button>
-            </div>
+  return (
+    <div className="pt-10 pb-20 bg-white">
+      <div className="container mx-auto px-4 md:px-8">
+        
+        {/* --- Breadcrumbs --- */}
+        <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500 mb-10">
+          <Link to="/" className="hover:text-[#008779] transition-colors">Home</Link> 
+          <span>/</span>
+          <Link to="/products" className="hover:text-[#008779] transition-colors">Products</Link> 
+          <span>/</span>
+          <span className="font-medium text-[#1E2A5E] truncate max-w-[200px]">{product.name}</span>
         </div>
 
-        
-    );
+        {/* --- Main Content --- */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16">
+          
+          {/* Left: Image Gallery */}
+          <div className="flex flex-col-reverse lg:flex-row gap-4">
+            {/* Thumbnails */}
+            <div className="flex lg:flex-col overflow-x-auto lg:overflow-y-auto gap-3 justify-between lg:justify-start lg:w-24 w-full no-scrollbar pb-2 lg:pb-0">
+              {product.images.map((img, index) => (
+                <div 
+                  key={index}
+                  onClick={() => setMainImage(img)}
+                  className={`cursor-pointer border-2 rounded-lg overflow-hidden w-[70px] h-[70px] lg:w-full lg:h-24 flex-shrink-0 transition-all ${mainImage === img ? 'border-[#008779]' : 'border-transparent hover:border-gray-200'}`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-contain bg-gray-50" />
+                </div>
+              ))}
+            </div>
+
+            {/* Main Display Image */}
+            <div className="flex-1 bg-gray-50 rounded-2xl flex items-center justify-center p-6 aspect-square lg:aspect-auto border border-gray-100 relative">
+               {product.offerPrice > 0 && (
+                 <span className="absolute top-4 left-4 bg-[#008779] text-white text-xs font-bold px-3 py-1 rounded-full">
+                   SALE
+                 </span>
+               )}
+              <img src={mainImage} alt={product.name} className="w-full h-full object-contain max-h-[500px]" />
+            </div>
+          </div>
+
+          {/* Right: Info & Actions */}
+          <div className="flex flex-col">
+            <h1 className="text-3xl lg:text-4xl font-bold text-[#1E2A5E] mb-3 leading-tight">
+              {product.name}
+            </h1>
+
+            {/* Rating */}
+            <div className="flex items-center gap-1 mb-6">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className={`w-4 h-4 ${i < 4 ? "fill-yellow-400 text-yellow-400" : "fill-gray-200 text-gray-200"}`} />
+              ))}
+              <span className="text-sm text-gray-500 ml-2">(12 Reviews)</span>
+            </div>
+
+            {/* Price */}
+            <div className="flex items-end gap-3 mb-6 border-b border-gray-100 pb-6">
+              <span className="text-4xl font-bold text-[#008779]">
+                {currency}{currentPrice}
+              </span>
+              {oldPrice && (
+                <span className="text-xl text-gray-400 line-through mb-1">
+                  {currency}{oldPrice}
+                </span>
+              )}
+            </div>
+
+            {/* Description */}
+            <div className="mb-8">
+                <h3 className="font-bold text-[#1E2A5E] mb-2">Description</h3>
+                <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                    {product.description}
+                </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-10">
+              <button 
+                onClick={() => addToCart(product._id)}
+                className="flex-1 bg-[#008779] text-white font-bold py-4 px-8 rounded-full hover:bg-[#007065] transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-95"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                Add to Cart
+              </button>
+              
+              <button 
+                onClick={() => {
+                  addToCart(product._id);
+                  navigate('/cart');
+                }}
+                className="flex-1 border-2 border-[#1E2A5E] text-[#1E2A5E] font-bold py-4 px-8 rounded-full hover:bg-[#1E2A5E] hover:text-white transition-all shadow-sm active:scale-95"
+              >
+                Buy Now
+              </button>
+            </div>
+
+            {/* Trust Badges / Features */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
+                <div className="flex items-center gap-3 text-sm text-gray-600 border border-gray-100 p-3 rounded-lg">
+                    <Truck className="w-5 h-5 text-[#1E2A5E]" />
+                    <span>Free Shipping</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600 border border-gray-100 p-3 rounded-lg">
+                    <Check className="w-5 h-5 text-[#1E2A5E]" />
+                    <span>In Stock</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600 border border-gray-100 p-3 rounded-lg">
+                    <ShieldCheck className="w-5 h-5 text-[#1E2A5E]" />
+                    <span>Secure Pay</span>
+                </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* --- Related Products Section --- */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-24 border-t border-gray-100 pt-16">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-[#1E2A5E] mb-2">Related Products</h2>
+              <div className="w-16 h-1 bg-[#008779] mx-auto rounded-full"></div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {relatedProducts.map((item) => (
+                <ProductCard key={item._id} product={item} />
+              ))}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
 };
 
 export default ProductDetails;

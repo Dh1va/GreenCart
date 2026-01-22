@@ -6,6 +6,7 @@ import {
   
   productById,
   productList,
+  toggleCategory,
   updateProduct,
 } from "../controllers/productController.js";
 
@@ -37,8 +38,10 @@ productRouter.post(
   updateProduct
 );
 
-productRouter.patch('/assign-category', adminOnly, assignCategory);
+productRouter.patch('/assign-category',authUser, adminOnly, assignCategory);
 
+
+productRouter.post("/toggle-category", authUser, adminOnly, toggleCategory);
 
 
 /* =====================================================

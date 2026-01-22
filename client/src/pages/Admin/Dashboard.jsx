@@ -38,7 +38,7 @@ const Dashboard = () => {
           
           {/* HEADER */}
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
               Dashboard
             </h2>
             <p className="text-sm text-slate-500 mt-1">

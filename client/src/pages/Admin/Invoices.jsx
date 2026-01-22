@@ -67,7 +67,7 @@ const Invoices = () => {
         {/* --- PAGE HEADER --- */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Invoices</h2>
+            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Invoices</h2>
             <p className="text-sm text-gray-500 mt-1">
               View and manage customer billing history.
             </p>

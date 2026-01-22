@@ -4,10 +4,12 @@ import User from "../models/user.js";
 import Otp from "../models/Otp.js";
 import { sendOtpSms } from "../utils/sendOtpSms.js";
 
+
 /* =====================================================
    SEND OTP
    ===================================================== */
 export const sendOtp = async (req, res) => {
+  
   try {
     const { mobile } = req.body;
 

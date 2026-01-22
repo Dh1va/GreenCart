@@ -60,7 +60,7 @@ const ProductList = () => {
         {/* Header */}
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
               Products
             </h2>
 

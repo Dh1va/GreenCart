@@ -132,3 +132,40 @@ export const assignCategory = async (req, res) => {
     }
 };
 
+export const toggleCategory = async (req, res) => {
+    try {
+        const { productId, categoryName, action } = req.body; // action = 'add' or 'remove'
+        
+        const product = await Product.findById(productId);
+        if (!product) return res.json({ success: false, message: "Product not found" });
+
+        let categories = [];
+
+        // Normalize current categories to Array
+        if (Array.isArray(product.category)) {
+            categories = [...product.category];
+        } else if (product.category) {
+            categories = [product.category];
+        }
+
+        if (action === 'add') {
+            if (!categories.includes(categoryName)) {
+                categories.push(categoryName);
+            }
+        } else if (action === 'remove') {
+            categories = categories.filter(c => c !== categoryName);
+            // If empty, set to Uncategorized or empty string depending on your logic
+            if (categories.length === 0) categories = ["Uncategorized"]; 
+        }
+
+        // Save back
+        product.category = categories;
+        await product.save();
+        
+        res.json({ success: true, message: `Product ${action === 'add' ? 'added to' : 'removed from'} ${categoryName}` });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};

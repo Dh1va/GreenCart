@@ -26,13 +26,18 @@ import Profile from "./pages/Profile";
 import Dashboard from "./pages/Admin/Dashboard";
 import CategoryList from "./pages/Admin/CategoryList";
 import AddCategory from "./pages/Admin/AddCategory";
-import AssignToCategory from "./pages/Admin/AssignToCategory";
 import Users from "./pages/Admin/Users";
 import CustomerOrders from "./pages/Admin/CustomerOrders";
 import CreateOrder from "./pages/Admin/CreateOrder";
 import Coupons from "./pages/Admin/Coupons";
 import Shipping from "./pages/Admin/Shipping";
 import Invoices from "./pages/Admin/Invoices";
+import Reports from "./pages/Admin/Reports";
+import Settings from "./pages/Admin/Settings";
+import ManageCategory from "./pages/Admin/ManageCategory";
+import AddCategoryGroup from "./pages/Admin/AddCategoryGroup";
+import CategoryGroupList from "./pages/Admin/CategoryGroupList";
+
 
 const App = () => {
   const {
@@ -68,7 +73,7 @@ const App = () => {
           <Route path="/products" element={<AllProducts />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/products/:category" element={<ProductCategory />} />
-          <Route path="/products/:category/:id" element={<ProductDetails />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/add-address" element={<AddAddress />} />
@@ -94,10 +99,18 @@ const App = () => {
             <Route path="users/:userId/orders" element={<CustomerOrders />} />
             <Route path="categories" element={<CategoryList />} />
             <Route path="categories/add" element={<AddCategory />} />
-            <Route path="categories/assign/:categoryName" element={<AssignToCategory />} />
+            
+            <Route path="category/manage/:id" element={<ManageCategory />} />
+            <Route path="category-groups" element={<CategoryGroupList />} />
+            <Route path="category-groups/add" element={<AddCategoryGroup />} />
+            <Route path="category-groups/edit/:id" element={<AddCategoryGroup />} />
             <Route path="coupons" element={<Coupons />} />
             <Route path="shipping" element={<Shipping/>} />
             <Route path="invoices" element={<Invoices />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
+
+
 
 
           </Route>

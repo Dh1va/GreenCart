@@ -93,7 +93,7 @@ const Shipping = () => {
       <div className="flex-1 overflow-y-auto no-scrollbar p-6 md:p-8">
         
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Shipping Configuration</h2>
+          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Shipping Configuration</h2>
           <p className="text-sm text-gray-500 mt-1">Manage courier partners and delivery rates.</p>
         </div>
 

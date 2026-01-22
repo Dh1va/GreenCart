@@ -11,6 +11,37 @@
     display: none;
 
 }
+@layer utilities {
+  /* --- Custom Scrollbar Logic --- */
+  
+  /* Width for vertical scrollbars, Height for horizontal */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  /* The background of the scrollbar (Transparent for a clean look) */
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* The moving part of the scrollbar (Your Primary Color) */
+  ::-webkit-scrollbar-thumb {
+    background-color: #d1d5db; /* gray-300 (Subtle default) */
+    border-radius: 20px;
+  }
+
+  /* Hover state - makes it darker/active */
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #111827; /* gray-900 (Your Primary Sidebar Color) */
+  }
+
+  /* Firefox Support */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
+  }
+}
 @keyframes slideUpFade {
   from {
     opacity: 0;

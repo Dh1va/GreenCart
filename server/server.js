@@ -26,6 +26,8 @@ import couponRouter from "./routes/couponRoute.js";
 import { startOtpCleanup } from "./cron/otpCleanup.js";
 import { Server } from "socket.io";
 import invoiceRouter from "./routes/adminInvoiceRoute.js";
+import adminReportsRoute from "./routes/adminReportsRoute.js";
+import categoryGroupRouter from "./routes/categoryGroupRoute.js";
 
 // ---------- INIT ----------
 const app = express();
@@ -93,11 +95,8 @@ app.use("/api/admin", adminDashboardRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/coupon", couponRouter);
 app.use("/api/admin-invoices", invoiceRouter);
-
-
-
-
-
+app.use("/api/admin/reports", adminReportsRoute);
+app.use("/api/category-group", categoryGroupRouter);
 
 
 

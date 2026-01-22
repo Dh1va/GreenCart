@@ -50,13 +50,12 @@ const CartDrawer = ({ open, onClose }) => {
             .filter(Boolean);
     }, [cartItems, products]);
 
-    // Recommended products (just taking first 4 that aren't in cart)
+    // Recommended products logic
     const recommendations = useMemo(() => {
         return products.filter(p => !cartItems[p._id]).slice(0, 4);
     }, [products, cartItems]);
 
     const subtotal = getCartAmount();
-    const progress = Math.min((subtotal / FREE_DELIVERY_THRESHOLD) * 100, 100);
 
     const handleCheckout = () => {
         if (!user) {
@@ -73,15 +72,19 @@ const CartDrawer = ({ open, onClose }) => {
         <AnimatePresence>
             {open && (
                 <>
+                    {/* BACKDROP */}
                     <motion.div
-                        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px]"
+                        // 👇 CHANGED: z-[100] to cover Navbar, blur-[1px] for subtle effect
+                        className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-[1px]"
                         variants={backdropVariants}
                         initial="hidden" animate="visible" exit="hidden"
                         onClick={onClose}
                     />
 
+                    {/* DRAWER */}
                     <motion.aside
-                        className="fixed top-0 right-0 z-50 h-full w-full sm:w-[420px] bg-white shadow-2xl flex flex-col"
+                        // 👇 CHANGED: z-[110] to stay above backdrop
+                        className="fixed top-0 right-0 z-[110] h-full w-full sm:w-[420px] bg-white shadow-2xl flex flex-col"
                         variants={drawerVariants}
                         initial="hidden" animate="visible" exit="exit"
                     >
@@ -93,22 +96,6 @@ const CartDrawer = ({ open, onClose }) => {
                             </div>
                             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-2xl">×</button>
                         </div>
-
-                        {/* PROGRESS BAR
-                        <div className="px-6 py-4 bg-gray-50/50 border-b">
-                            <div className="flex justify-between mb-2">
-                                <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Free Shipping</span>
-                                <span className="text-xs font-bold text-primary">{Math.round(progress)}%</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                                <motion.div
-                                    className="h-full bg-primary"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${progress}%` }}
-                                    transition={{ duration: 1, ease: "circOut" }}
-                                />
-                            </div>
-                        </div> */}
 
                         {/* MAIN CONTENT */}
                         <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6">

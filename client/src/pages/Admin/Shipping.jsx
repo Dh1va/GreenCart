@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { Trash2, Truck, Plus, Clock, Edit, X, Package } from "lucide-react";
+import { Trash2, Truck, Plus, Clock, Edit, X, Package, Hash } from "lucide-react";
 
 const Shipping = () => {
   const { couriers, fetchCouriersOnce, invalidateCouriers, axios, currency } = useAppContext();
@@ -10,13 +10,15 @@ const Shipping = () => {
   
   const [editingId, setEditingId] = useState(null);
 
-  // ✅ Added chargePerItem to state
+  // ✅ Added trackingPrefix and trackingSequence
   const [form, setForm] = useState({ 
     name: "", 
     price: "", 
     minDays: "", 
     maxDays: "",
-    chargePerItem: false 
+    chargePerItem: false,
+    trackingPrefix: "",
+    trackingSequence: "" 
   });
 
   useEffect(() => {
@@ -24,7 +26,7 @@ const Shipping = () => {
   }, []);
 
   const resetForm = () => {
-    setForm({ name: "", price: "", minDays: "", maxDays: "", chargePerItem: false });
+    setForm({ name: "", price: "", minDays: "", maxDays: "", chargePerItem: false, trackingPrefix: "", trackingSequence: "" });
     setEditingId(null);
   };
 
@@ -34,7 +36,10 @@ const Shipping = () => {
       price: courier.price,
       minDays: courier.minDays,
       maxDays: courier.maxDays,
-      chargePerItem: courier.chargePerItem || false // ✅ Load existing value
+      chargePerItem: courier.chargePerItem || false,
+      // ✅ Load existing values
+      trackingPrefix: courier.trackingPrefix || "",
+      trackingSequence: courier.trackingSequence || 1000
     });
     setEditingId(courier._id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -53,6 +58,7 @@ const Shipping = () => {
       payload.price = Number(payload.price);
       payload.minDays = Number(payload.minDays);
       payload.maxDays = Number(payload.maxDays);
+      payload.trackingSequence = Number(payload.trackingSequence); // ✅ Convert
 
       const { data } = editingId 
         ? await axios.put(endpoint, payload) 
@@ -137,7 +143,6 @@ const Shipping = () => {
                             />
                         </div>
 
-                        {/* ✅ CHECKBOX FOR PER ITEM */}
                         <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                             <input 
                                 type="checkbox" 
@@ -149,6 +154,36 @@ const Shipping = () => {
                             <label htmlFor="chargePerItem" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
                                 Charge per item quantity?
                             </label>
+                        </div>
+
+                        {/* ✅ NEW: TRACKING CONFIG SECTION */}
+                        <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Hash className="w-3.5 h-3.5 text-indigo-600" />
+                                <span className="text-xs font-bold text-indigo-900 uppercase">Auto-Tracking Config</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="col-span-1">
+                                    <label className="text-[10px] font-semibold text-gray-500">Prefix</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="TRK-" 
+                                        className="w-full mt-0.5 px-2 py-1.5 border border-gray-200 rounded text-sm bg-white"
+                                        value={form.trackingPrefix}
+                                        onChange={e => setForm({...form, trackingPrefix: e.target.value})}
+                                    />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="text-[10px] font-semibold text-gray-500">Start Sequence</label>
+                                    <input 
+                                        type="number" 
+                                        placeholder="1000" 
+                                        className="w-full mt-0.5 px-2 py-1.5 border border-gray-200 rounded text-sm bg-white font-mono"
+                                        value={form.trackingSequence}
+                                        onChange={e => setForm({...form, trackingSequence: e.target.value})}
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -185,14 +220,14 @@ const Shipping = () => {
                 </div>
             </div>
 
-            {/* LIST */}
+            {/* LIST (Unchanged logic, just display updates) */}
             <div className="lg:col-span-2">
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Name</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Calculation</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Cost & Tracking</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">ETA</th>
                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Action</th>
                             </tr>
@@ -214,19 +249,23 @@ const Shipping = () => {
                                             </div>
                                         </td>
                                         
-                                        {/* ✅ COST DISPLAY */}
                                         <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-gray-700">
-                                                    {c.price === 0 ? <span className="text-green-600">Free</span> : `${currency}${c.price}`}
-                                                </span>
-                                                {c.chargePerItem ? (
-                                                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded w-fit border border-indigo-100 flex items-center gap-1 mt-1">
-                                                        <Package className="w-3 h-3" /> Per Item
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-gray-700">
+                                                        {c.price === 0 ? <span className="text-green-600">Free</span> : `${currency}${c.price}`}
                                                     </span>
-                                                ) : (
-                                                    <span className="text-[10px] text-gray-400">Flat Rate</span>
-                                                )}
+                                                    {c.chargePerItem && (
+                                                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
+                                                            / Item
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {/* Display Next Tracking ID */}
+                                                <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                                                    <Hash className="w-3 h-3" />
+                                                    Next: <span className="font-mono text-gray-600">{c.trackingPrefix}{c.trackingSequence || 1000}</span>
+                                                </div>
                                             </div>
                                         </td>
 

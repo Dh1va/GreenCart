@@ -23,6 +23,9 @@ const CreateOrder = () => {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  
+  // ✅ NEW: Settings State
+  const [taxRate, setTaxRate] = useState(0); 
 
   // Search State
   const [userSearch, setUserSearch] = useState("");
@@ -36,6 +39,7 @@ const CreateOrder = () => {
     if (!products.length) fetchProducts();
     fetchCouriersOnce();
 
+    // Load Users
     const loadUsers = async () => {
       try {
         const { data } = await axios.get("/api/admin-users/users");
@@ -48,7 +52,20 @@ const CreateOrder = () => {
         toast.error("Error connecting to server");
       }
     };
+
+    const loadSettings = async () => {
+  try {
+    const { data } = await axios.get("/api/payments/enabled");
+    if (data.success) {
+      setTaxRate(Number(data.taxPercent) || 0);
+    }
+  } catch (error) {
+    console.error("Failed to load tax settings", error);
+  }
+};
+
     loadUsers();
+    loadSettings();
   }, []);
 
   useEffect(() => {
@@ -112,7 +129,9 @@ const CreateOrder = () => {
     return cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   }, [cart]);
 
-  const taxAmount = Math.floor(subtotal * 0.02);
+  // ✅ UPDATED: Dynamic Tax Calculation
+  const taxAmount = Math.floor(subtotal * (taxRate / 100));
+  
   const shippingFee = selectedCourier?.price || 0;
   const totalAmount = subtotal + taxAmount + shippingFee;
 
@@ -400,7 +419,7 @@ const CreateOrder = () => {
                     <span className="font-medium text-slate-900">{currency}{subtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Estimated Tax (2%)</span>
+                    <span className="text-slate-500">Estimated Tax ({taxRate}%)</span>
                     <span className="font-medium text-slate-900">{currency}{taxAmount.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">

@@ -13,11 +13,6 @@ const getBrowser = async () => {
         "--disable-dev-shm-usage",
       ],
     });
-
-    // warm-up
-    const warmup = await browserInstance.newPage();
-    await warmup.goto("about:blank");
-    await warmup.close();
   }
   return browserInstance;
 };
@@ -26,12 +21,12 @@ export const generatePDF = async (templateHtml, data, options = {}) => {
   const browser = await getBrowser();
   const page = await browser.newPage();
 
-  await page.setJavaScriptEnabled(false);
-
+  // 1. Enable Images (Required for Barcodes/Logos)
   await page.setRequestInterception(true);
   page.on("request", (req) => {
     const type = req.resourceType();
-    if (["image", "media", "font"].includes(type)) {
+    // Block media/font for speed, but ALLOW images
+    if (["media", "font"].includes(type)) {
       req.abort();
     } else {
       req.continue();
@@ -41,13 +36,23 @@ export const generatePDF = async (templateHtml, data, options = {}) => {
   const template = handlebars.compile(templateHtml);
   const html = template(data);
 
-  await page.setContent(html, { waitUntil: "domcontentloaded" });
+  // Wait for network idle to ensure barcode images load
+  await page.setContent(html, { waitUntil: "networkidle0" });
 
-  const pdf = await page.pdf({
-    format: "A4",
+  // 2. Logic to handle A4 vs A6 vs Custom Sizes
+  const pdfConfig = {
+    format: "A4", // Default fallback (Invoice)
     printBackground: true,
-    ...options,
-  });
+    ...options,   // Overrides (e.g., format: "A6")
+  };
+
+  // Critical: If custom width/height is explicitly passed, delete 'format'
+  // because Puppeteer ignores custom dimensions if 'format' exists.
+  if (options.width || options.height) {
+    delete pdfConfig.format;
+  }
+
+  const pdf = await page.pdf(pdfConfig);
 
   await page.close();
   return pdf;

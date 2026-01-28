@@ -10,12 +10,15 @@ const courierSchema = new mongoose.Schema(
     minDays: { type: Number, required: true },
     maxDays: { type: Number, required: true },
 
+    trackingPrefix: { type: String, default: "" }, 
+    trackingSequence: { type: Number, default: 1000 }, 
+
     // Admin control flags
     isDefault: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
 
     // Optional future extension
-    description: { type: String }, // e.g. "Fastest delivery"
+    description: { type: String }, 
   },
   { timestamps: true }
 );

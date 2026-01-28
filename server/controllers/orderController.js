@@ -2,6 +2,7 @@ import Order from "../models/Order.js";
 import Product from "../models/product.js";
 import Coupon from "../models/Coupon.js";
 import Address from "../models/Address.js";
+import Courier from "../models/Courier.js";
 import User from "../models/user.js";
 import Razorpay from "razorpay";
 import crypto from "crypto";
@@ -518,22 +519,26 @@ export const getShippingLabel = async (req, res) => {
     if (!order) return res.status(404).send("Order not found");
 
     const totalQty = order.items.reduce((acc, item) => acc + item.quantity, 0);
+    
+    // Fetch store name for Return Address (Optional)
+    const settings = await Settings.findOne().lean();
 
     const data = {
       ...order,
+      storeName: settings?.storeName || "My Store",
       totalQty,
     };
 
     const pdfBuffer = await generatePDF(labelTemplate, data, {
-      width: "4in",
-      height: "6in",
-      printBackground: true,
-    });
-
+  width: "4in",
+  height: "6in",
+  printBackground: true,
+});
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `inline; filename=label_${order._id}.pdf`);
     return res.send(pdfBuffer);
   } catch (error) {
+    console.error("Label Gen Error:", error);
     return res.status(500).send("Error generating label");
   }
 };
@@ -545,35 +550,67 @@ export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId, status, trackingId, trackingUrl } = req.body;
 
+    // 1. Fetch order first to check assigned courier
+    let order = await Order.findById(orderId);
+    
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
     const updateData = { "delivery.status": status };
 
+    // 2. Handle "Shipped" Logic
     if (status === "shipped") {
       updateData["delivery.shippedAt"] = new Date();
-      if (trackingId) updateData["delivery.trackingId"] = trackingId;
+
       if (trackingUrl) updateData["delivery.trackingUrl"] = trackingUrl;
+
+      // ✅ CASE A: Manual Tracking ID provided from frontend
+      if (trackingId) {
+        updateData["delivery.trackingId"] = trackingId;
+      } 
+      
+      else if (order.courier?.courierId && !order.delivery.trackingId) {
+  const courier = await Courier.findByIdAndUpdate(
+    order.courier.courierId,
+    { $inc: { trackingSequence: 1 } },
+    { new: true }
+  );
+
+  if (courier) {
+    updateData["delivery.trackingId"] =
+      `${courier.trackingPrefix || ""}${courier.trackingSequence}`;
+  }
+}
     }
 
     if (status === "delivered") {
       updateData["delivery.deliveredAt"] = new Date();
     }
 
-    const order = await Order.findByIdAndUpdate(orderId, { $set: updateData }, { new: true });
+    // 3. Apply updates to the Order
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId, 
+      { $set: updateData }, 
+      { new: true }
+    );
 
-    if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
-    }
-
+    // 4. Socket Emits
     const io = req.app.get("io");
-    io.to("admins").emit("order:update", order);
-    io.to(`user_${order.user}`).emit("order:update", order);
+    io.to("admins").emit("order:update", updatedOrder);
+    io.to(`user_${updatedOrder.user}`).emit("order:update", updatedOrder);
 
-    return res.json({ success: true, message: "Order status updated" });
+    return res.json({ 
+      success: true, 
+      message: "Order status updated",
+      trackingId: updateData["delivery.trackingId"] // Return to frontend if needed
+    });
+
   } catch (error) {
     console.error("Status Update Error:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
-
 /* =====================================================
    ADMIN: UPDATE PAYMENT STATUS
 ===================================================== */

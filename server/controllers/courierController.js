@@ -10,10 +10,10 @@ export const getActiveCouriers = async (req, res) => {
   }
 };
 
-// ADMIN: Add a new courier option
+// ADMIN: Add a new courier
 export const addCourier = async (req, res) => {
   try {
-    const { name, price, minDays, maxDays } = req.body;
+    const { name, price, minDays, maxDays, chargePerItem, trackingPrefix, trackingSequence } = req.body;
     
     const newCourier = new Courier({
       name,
@@ -21,11 +21,14 @@ export const addCourier = async (req, res) => {
       minDays: Number(minDays),
       maxDays: Number(maxDays),
       chargePerItem: Boolean(chargePerItem),
+      
+      trackingPrefix: trackingPrefix || "", 
+      trackingSequence: Number(trackingSequence) || 1000, 
       isActive: true
     });
 
     await newCourier.save();
-    res.json({ success: true, message: "Courier Added Successfully" });
+    res.json({ success: true, message: "Courier Added" });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
@@ -53,10 +56,10 @@ export const getAllCouriers = async (req, res) => {
 
 
 
-// ADMIN: Update an existing courier
+// ADMIN: Update courier
 export const updateCourier = async (req, res) => {
   try {
-    const { id, name, price, minDays, maxDays } = req.body;
+    const { id, name, price, minDays, maxDays, chargePerItem, trackingPrefix, trackingSequence } = req.body;
 
     await Courier.findByIdAndUpdate(id, {
       name,
@@ -64,9 +67,12 @@ export const updateCourier = async (req, res) => {
       minDays: Number(minDays),
       maxDays: Number(maxDays),
       chargePerItem: Boolean(chargePerItem),
+      // ✅ Update fields
+      trackingPrefix: trackingPrefix || "",
+      trackingSequence: Number(trackingSequence)
     });
 
-    res.json({ success: true, message: "Courier Updated Successfully" });
+    res.json({ success: true, message: "Courier Updated" });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }

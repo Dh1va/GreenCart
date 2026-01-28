@@ -5,28 +5,43 @@ export const invoiceTemplate = `
       body { font-family: Arial, sans-serif; padding: 24px; }
       .header { display:flex; justify-content:space-between; border-bottom:2px solid #22c55e; padding-bottom:10px; }
       .title { font-size:24px; font-weight:bold; color:#16a34a; }
-      table { width:100%; border-collapse:collapse; margin-top:30px; }
+      table { width:100%; border-collapse:collapse; margin-top:20px; }
       th, td { border-bottom:1px solid #ddd; padding:8px; font-size:12px; }
       th { background:#f3f4f6; text-align:left; }
-      .total { margin-top:20px; text-align:right; font-size:16px; font-weight:bold; }
+      .meta { font-size:12px; color:#111827; margin-top:6px; }
+      .total { margin-top:16px; text-align:right; font-size:16px; font-weight:bold; }
+      .section { margin-top:18px; }
+      .muted { color:#6b7280; font-size:12px; }
     </style>
   </head>
   <body>
     <div class="header">
-      <div class="title">GREEN CART</div>
       <div>
-        <div><b>Invoice #{{orderId}}</b></div>
-        <div>Date: {{date}}</div>
+        <div class="title">{{storeName}}</div>
+        <div class="meta">
+          Support: {{storeEmail}} {{#if supportPhone}} | {{supportPhone}}{{/if}}
+        </div>
+        {{#if gstNumber}}
+          <div class="meta">GST: {{gstNumber}}</div>
+        {{/if}}
+      </div>
+
+      <div>
+        <div><b>Invoice #{{invoiceNumber}}</b></div>
+        <div class="muted">Date: {{date}}</div>
+        <div class="muted">Order: {{orderId}}</div>
       </div>
     </div>
 
-    <h4>Customer</h4>
-    <p>
-      {{address.firstName}} {{address.lastName}}<br/>
-      {{address.street}}, {{address.city}}<br/>
-      {{address.state}} - {{address.zipCode}}<br/>
-      Phone: {{address.phone}}
-    </p>
+    <div class="section">
+      <h4>Customer</h4>
+      <p class="muted">
+        {{address.firstName}} {{address.lastName}}<br/>
+        {{address.street}}, {{address.city}}<br/>
+        {{address.state}} - {{address.zipCode}}<br/>
+        Phone: {{address.phone}}
+      </p>
+    </div>
 
     <table>
       <thead>
@@ -41,15 +56,29 @@ export const invoiceTemplate = `
         <tr>
           <td>{{product.name}}</td>
           <td>{{quantity}}</td>
-          <td>₹{{price}}</td>
+          <td>{{../currencySymbol}}{{price}}</td>
         </tr>
         {{/each}}
       </tbody>
     </table>
 
     <div class="total">
-      Total: ₹{{pricing.total}}
+      Total: {{currencySymbol}}{{pricing.total}}
     </div>
+
+    {{#if invoiceTerms}}
+      <div class="section">
+        <h4>Terms</h4>
+        <p class="muted">{{invoiceTerms}}</p>
+      </div>
+    {{/if}}
+
+    {{#if returnPolicy}}
+      <div class="section">
+        <h4>Return Policy</h4>
+        <p class="muted">{{returnPolicy}}</p>
+      </div>
+    {{/if}}
   </body>
 </html>
 `;

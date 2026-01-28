@@ -454,6 +454,7 @@ export const AppContextProvider = ({ children }) => {
     setSuppressCartAutoOpen,
 
     wishlist,
+    setWishlist,
     addToWishlist,
 
     addToCart,

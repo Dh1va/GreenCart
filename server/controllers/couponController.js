@@ -58,3 +58,57 @@ export const deleteCoupon = async (req, res) => {
     res.json({ success: false, message: err.message });
   }
 };
+
+export const validateCoupon = async (req, res) => {
+  try {
+    const { code, orderAmount } = req.body;
+
+    if (!code) {
+      return res.json({ success: false, message: "Coupon code is required" });
+    }
+
+    const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+
+    if (!coupon) {
+      return res.json({ success: false, message: "Coupon not found" });
+    }
+
+    if (!coupon.isActive) {
+      return res.json({ success: false, message: "Coupon is inactive" });
+    }
+
+    if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+      return res.json({ success: false, message: "Coupon expired" });
+    }
+
+    if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+      return res.json({ success: false, message: "Coupon usage limit reached" });
+    }
+
+    if (orderAmount < coupon.minOrderAmount) {
+      return res.json({
+        success: false,
+        message: `Minimum order amount is ₹${coupon.minOrderAmount}`,
+      });
+    }
+
+    let discount = 0;
+
+    if (coupon.type === "PERCENT") {
+      discount = (orderAmount * coupon.value) / 100;
+      if (coupon.maxDiscount) {
+        discount = Math.min(discount, coupon.maxDiscount);
+      }
+    }
+
+    if (coupon.type === "FLAT") {
+      discount = coupon.value;
+    }
+
+    if (discount > orderAmount) discount = orderAmount;
+
+    return res.json({ success: true, discount });
+  } catch (err) {
+    return res.json({ success: false, message: err.message });
+  }
+};

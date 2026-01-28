@@ -98,7 +98,7 @@ const MainBanner = () => {
                   
                   {/* 👇 md:ml-16 to push text past the arrow */}
                   <div className="max-w-xl lg:max-w-2xl space-y-6 animate-fade-in-up md:ml-16">
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-semibold text-white leading-[1.1] drop-shadow-md">
+                    <h1 className="text-3xl md:text-4xl lg:text-6xl font-semibold text-white leading-[1.1] drop-shadow-md">
                       {slide.title}
                     </h1>
                     

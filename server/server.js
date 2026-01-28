@@ -24,10 +24,14 @@ import couponRouter from "./routes/couponRoute.js";
 
 
 import { startOtpCleanup } from "./cron/otpCleanup.js";
+import { startOrderCleanup } from "./cron/orderCleanup.js";
 import { Server } from "socket.io";
 import invoiceRouter from "./routes/adminInvoiceRoute.js";
 import adminReportsRoute from "./routes/adminReportsRoute.js";
 import categoryGroupRouter from "./routes/categoryGroupRoute.js";
+import adminSettingsRoute from "./routes/adminSettingsRoute.js";
+import paymentRoute from "./routes/paymentRoute.js";
+import publicSettingsRoute from "./routes/publicSettingsRoute.js";
 
 // ---------- INIT ----------
 const app = express();
@@ -97,11 +101,16 @@ app.use("/api/coupon", couponRouter);
 app.use("/api/admin-invoices", invoiceRouter);
 app.use("/api/admin/reports", adminReportsRoute);
 app.use("/api/category-group", categoryGroupRouter);
+app.use("/api/admin", adminSettingsRoute);
+app.use("/api/payments", paymentRoute);
+app.use("/api/settings", publicSettingsRoute);
+
 
 
 
 // ---------- CRON ----------
 startOtpCleanup();
+startOrderCleanup();
 
 // ---------- START ----------
 server.listen(port, () => {

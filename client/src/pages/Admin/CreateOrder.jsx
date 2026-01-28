@@ -2,14 +2,15 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-
-// --- ICONS ---
-const SearchIcon = () => <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>;
-const UserIcon = () => <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
-const TrashIcon = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
-const ChevronDownIcon = () => <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>;
-const BagIcon = () => <svg className="w-12 h-12 text-indigo-100 bg-indigo-50 p-2.5 rounded-full mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>;
-const TruckIcon = () => <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v9h1m8-9h2.414a1 1 0 01.707.293l2.586 2.586a1 1 0 01.293.707V16h-1.828" /></svg>;
+import { 
+  Search, 
+  User, 
+  Trash2, 
+  ChevronDown, 
+  ShoppingBag, 
+  Truck, 
+  ArrowLeft 
+} from "lucide-react";
 
 const CreateOrder = () => {
   const { products, axios, currency, fetchProducts, couriers, fetchCouriersOnce } = useAppContext();
@@ -18,7 +19,7 @@ const CreateOrder = () => {
   // State
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedCourier, setSelectedCourier] = useState(null); // New Courier State
+  const [selectedCourier, setSelectedCourier] = useState(null);
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -33,7 +34,7 @@ const CreateOrder = () => {
   // --- 1. LOAD DATA ---
   useEffect(() => {
     if (!products.length) fetchProducts();
-    fetchCouriersOnce(); // Load couriers
+    fetchCouriersOnce();
 
     const loadUsers = async () => {
       try {
@@ -50,14 +51,12 @@ const CreateOrder = () => {
     loadUsers();
   }, []);
 
-  // Set default courier when loaded
   useEffect(() => {
     if (couriers.length > 0 && !selectedCourier) {
       setSelectedCourier(couriers[0]);
     }
   }, [couriers]);
 
-  // Click Outside
   useEffect(() => {
     const handler = (e) => {
       if (userRef.current && !userRef.current.contains(e.target)) {
@@ -136,7 +135,7 @@ const CreateOrder = () => {
             price: i.price 
         })),
         paymentMethod: "COD",
-        courier: selectedCourier // ✅ SEND COURIER DATA
+        courier: selectedCourier 
       };
 
       const { data } = await axios.post("/api/admin-orders/create", payload);
@@ -144,7 +143,6 @@ const CreateOrder = () => {
       if (data.success) {
         toast.success("Order created successfully");
         setShowConfirmModal(false);
-        // await axios.get("/api/admin-orders/orders"); // Optional if navigate handles reload
         navigate("/admin/orders", { state: { refresh: true } });
       } else {
         toast.error(data.message);
@@ -159,14 +157,23 @@ const CreateOrder = () => {
   return (
     <div className="flex-1 h-screen overflow-hidden flex flex-col relative bg-gray-100 font-sans">
       <div className="flex-1 overflow-y-auto no-scrollbar p-6 md:p-8">
-        <div className=" mx-auto space-y-8 pb-20">
+        <div className="max-w-7xl mx-auto space-y-8 pb-20">
           
           {/* Header */}
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Create Order</h1>
-              <p className="text-sm text-slate-500 mt-1">Manually create an order for a customer.</p>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => navigate('/admin/orders')}
+                className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm text-slate-600"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Create Order</h1>
+                <p className="text-sm text-slate-500 mt-1">Manually create an order for a customer.</p>
+              </div>
             </div>
+            
             <button 
               onClick={() => navigate('/admin/orders')} 
               className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
@@ -192,7 +199,7 @@ const CreateOrder = () => {
                     onClick={() => setShowUserDropdown(true)}
                     className="flex items-center border border-slate-200 rounded-xl px-4 py-3 cursor-text bg-white focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all shadow-sm hover:border-slate-300"
                   >
-                    <UserIcon />
+                    <User className="w-5 h-5 text-gray-400" />
                     <input 
                       type="text" 
                       placeholder="Search by name or mobile..." 
@@ -212,13 +219,13 @@ const CreateOrder = () => {
                         ×
                       </button>
                     ) : (
-                      <ChevronDownIcon />
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
                     )}
                   </div>
 
                   {/* User Dropdown */}
                   {showUserDropdown && filteredUsers.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden max-h-60 overflow-y-auto animate-slideInDown">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden max-h-60 overflow-y-auto">
                       {filteredUsers.map(u => (
                         <div 
                           key={u._id} 
@@ -251,7 +258,7 @@ const CreateOrder = () => {
                 
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <SearchIcon />
+                    <Search className="w-5 h-5 text-gray-400" />
                   </div>
                   <input 
                     type="text" 
@@ -263,7 +270,7 @@ const CreateOrder = () => {
                   
                   {/* Product Dropdown */}
                   {productSearch && filteredProducts.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 z-40 overflow-hidden max-h-64 overflow-y-auto animate-slideInDown">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 z-40 overflow-hidden max-h-64 overflow-y-auto">
                       {filteredProducts.map(p => (
                         <div 
                           key={p._id} 
@@ -310,8 +317,8 @@ const CreateOrder = () => {
                       {cart.length === 0 ? (
                         <tr>
                           <td colSpan="4" className="p-12 text-center">
-                            <div className="text-slate-300 mb-2">
-                              <svg className="w-10 h-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                            <div className="text-slate-300 mb-2 flex justify-center">
+                              <ShoppingBag className="w-10 h-10" />
                             </div>
                             <p className="text-slate-400 text-sm">No items added yet.</p>
                           </td>
@@ -341,7 +348,7 @@ const CreateOrder = () => {
                               {currency}{(item.price * item.quantity).toLocaleString()}
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <button onClick={() => removeItem(item._id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><TrashIcon /></button>
+                              <button onClick={() => removeItem(item._id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                             </td>
                           </tr>
                         ))
@@ -360,12 +367,12 @@ const CreateOrder = () => {
                   Payment Summary
                 </h2>
                 
-                {/* 🆕 Courier Selection */}
+                {/* Courier Selection */}
                 <div className="mb-6">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 block">Shipping Method</label>
                     <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <TruckIcon />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <Truck className="w-5 h-5" />
                         </div>
                         <select 
                             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none cursor-pointer"
@@ -382,7 +389,7 @@ const CreateOrder = () => {
                             ))}
                         </select>
                         <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400">
-                            <ChevronDownIcon />
+                            <ChevronDown className="w-4 h-4" />
                         </div>
                     </div>
                 </div>
@@ -438,7 +445,11 @@ const CreateOrder = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center isolate">
             <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-[2px]" onClick={() => setShowConfirmModal(false)}></div>
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 m-4 animate-scaleIn text-center">
-                <div className="flex justify-center"><BagIcon /></div>
+                <div className="flex justify-center mb-4">
+                    <div className="p-3 bg-indigo-50 rounded-full">
+                        <ShoppingBag className="w-8 h-8 text-indigo-600" />
+                    </div>
+                </div>
                 <h2 className="text-lg font-bold text-slate-900 mb-2">Confirm Order Creation?</h2>
                 <p className="text-sm text-slate-500 mb-6">
                     You are about to create an order for <strong>{selectedUser?.name}</strong> totaling <strong>{currency}{totalAmount.toLocaleString()}</strong>.
@@ -451,7 +462,7 @@ const CreateOrder = () => {
                         className="flex-1 px-4 py-2.5 text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold shadow-lg transition-colors flex justify-center items-center gap-2"
                     >
                         {loading ? (
-                            <><svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Creating...</>
+                            <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Creating...</>
                         ) : "Confirm"}
                     </button>
                 </div>

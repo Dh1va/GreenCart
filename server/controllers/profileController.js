@@ -5,24 +5,47 @@ import { sendOtpSms } from "../utils/sendOtpSms.js";
 
 /* GET PROFILE */
 export const getProfile = async (req, res) => {
-  const user = await User.findById(req.userId).select("-cartItems");
-  res.json({ success: true, user });
-};
-
-/* UPDATE NAME */
-export const updateName = async (req, res) => {
-  const { name } = req.body;
-
-  if (!name) {
-    return res.json({ success: false, message: "Name required" });
+  try {
+    const user = await User.findById(req.userId).select("-cartItems");
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
-
-  await User.findByIdAndUpdate(req.userId, { name });
-  res.json({ success: true, message: "Name updated" });
 };
 
-/* SEND OTP FOR MOBILE CHANGE */
+/* UPDATE BASIC INFO (Name & Email) */
+export const updateBasicInfo = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    if (!name || name.trim().length < 2) {
+      return res.status(400).json({ success: false, message: "Valid name is required" });
+    }
+
+    // Check if email is being used by another user (if email is provided)
+    if (email) {
+      const existingEmail = await User.findOne({ email, _id: { $ne: req.userId } });
+      if (existingEmail) {
+        return res.status(400).json({ success: false, message: "Email is already in use" });
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.userId, 
+      { name, email }, 
+      { new: true, runValidators: true }
+    ).select("-cartItems");
+
+    res.json({ success: true, message: "Profile updated successfully", user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/* SEND OTP FOR MOBILE CHANGE  */
 export const sendMobileChangeOtp = async (req, res) => {
+
   const { mobile } = req.body;
 
   if (!mobile || mobile.length !== 10) {
@@ -52,6 +75,7 @@ export const sendMobileChangeOtp = async (req, res) => {
 
 /* VERIFY & UPDATE MOBILE */
 export const verifyMobileChange = async (req, res) => {
+ 
   const { mobile, otp } = req.body;
 
   const record = await Otp.findOne({ mobile });

@@ -1,44 +1,70 @@
-import React, { useMemo } from 'react';
-import { useAppContext } from '../context/AppContext';
-import { useParams } from 'react-router-dom';
-import ProductCard from '../components/ProductCard';
+import React, { useMemo } from "react";
+import { useAppContext } from "../context/AppContext";
+import { useParams, Link } from "react-router-dom";
+import ProductCard from "../components/ProductCard";
 
 const ProductCategory = () => {
   const { products, categories } = useAppContext();
   const { category } = useParams();
 
+  const toSlug = (text) =>
+    text
+      .toLowerCase()
+      .trim()
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
   // 1. RESOLVE CATEGORY NAME
-  // If 'category' param is an ID (e.g., 6960...), find the matching name from categories list.
-  // Otherwise, use the param directly (e.g., "Men").
   const categoryName = useMemo(() => {
     if (!categories) return category;
-    const foundCat = categories.find(c => c._id === category || c.name.toLowerCase() === category.toLowerCase());
+
+    const foundCat = categories.find(
+      (c) => toSlug(c.name) === category || c._id === category,
+    );
+
     return foundCat ? foundCat.name : category;
   }, [categories, category]);
 
   // 2. FILTER PRODUCTS
   const filteredProducts = products.filter((product) => {
     if (!product?.category) return false;
-    
-    // Handle both array and string categories
-    const productCategories = Array.isArray(product.category) 
-      ? product.category 
+
+    const productCategories = Array.isArray(product.category)
+      ? product.category
       : [product.category];
 
-    // Check if any product category matches the resolved URL category name
     return productCategories.some(
-      (cat) => String(cat).toLowerCase() === String(categoryName).toLowerCase()
+      (cat) => toSlug(String(cat)) === toSlug(String(categoryName)),
     );
   });
 
   return (
     <div className="pt-10 pb-20 min-h-screen bg-white">
       <div className="container mx-auto px-4 md:px-8">
-        
+
+        {/* --- Breadcrumbs --- */}
+        <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500 mb-10">
+          <Link to="/" className="hover:text-[#008779] transition-colors">
+            Home
+          </Link>
+          <span>/</span>
+          <Link
+            to="/products"
+            className="hover:text-[#008779] transition-colors"
+          >
+            Products
+          </Link>
+          <span>/</span>
+          <span className="font-medium text-[#1E2A5E] capitalize">
+            {categoryName}
+          </span>
+        </div>
+
         {/* --- Header --- */}
         <div className="text-center mb-16 space-y-3">
           <h2 className="text-3xl md:text-4xl font-bold text-[#1E2A5E] capitalize">
-            {categoryName?.replace('-', ' ')}
+              {categoryName}
           </h2>
           <div className="w-16 h-1 bg-[#008779] mx-auto rounded-full"></div>
           <p className="text-gray-500 text-lg font-medium">
@@ -55,9 +81,12 @@ const ProductCategory = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-[40vh] text-center">
-            <p className="text-2xl font-bold text-[#1E2A5E] mb-2">No products found</p>
+            <p className="text-2xl font-bold text-[#1E2A5E] mb-2">
+              No products found
+            </p>
             <p className="text-gray-500">
-              We couldn't find any items in the <span className="font-bold">"{categoryName}"</span> category.
+              We couldn't find any items in the{" "}
+              <span className="font-bold">"{categoryName}"</span> category.
             </p>
           </div>
         )}

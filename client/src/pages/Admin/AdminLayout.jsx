@@ -1,5 +1,5 @@
-import React from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import React, { useEffect } from "react";
+import { NavLink, Outlet, useLocation, Navigate } from "react-router-dom";
 import { assets } from "../../assets/assets";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
@@ -66,6 +66,7 @@ const SettingsIcon = (props) => (
 
 const AdminLayout = () => {
   const { user, axios, navigate, setUser, setCartItems } = useAppContext();
+  const location = useLocation();
 
   const sidebarLinks = [
     { name: "Dashboard", path: "/admin/dashboard", icon: DashboardIcon },
@@ -80,10 +81,13 @@ const AdminLayout = () => {
     { name: "Settings", path: "/admin/settings", icon: SettingsIcon },
   ];
 
-  if (!user || user.role !== "admin") {
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    if (!user || user.role !== "admin") {
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
+
+  if (!user || user.role !== "admin") return null;
 
   const logout = async () => {
     try {
@@ -92,12 +96,15 @@ const AdminLayout = () => {
         setUser(null);
         setCartItems({});
         toast.success("Logged out");
-        window.location.href = "/";
+        navigate("/", { replace: true });
       }
     } catch (error) {
       toast.error("Logout failed");
     }
   };
+ if (location.pathname === "/admin") {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
@@ -108,7 +115,19 @@ const AdminLayout = () => {
         
         {/* 1. Header (Logo) */}
         <div className="h-20 flex items-center justify-center lg:justify-start lg:px-6 border-b border-gray-100 flex-shrink-0">
-          <img src={assets.logo} className="h-8 w-auto object-contain" alt="Logo" />
+          {/* Mobile Logo (logo1) - Visible on small screens, hidden on LG+ */}
+          <img 
+            src={assets.logo1} 
+            className="block lg:hidden h-8 w-auto object-contain" 
+            alt="Mobile Logo" 
+          />
+          
+          {/* Desktop Logo (logo) - Hidden on small screens, visible on LG+ */}
+          <img 
+            src={assets.logo} 
+            className="hidden lg:block h-8 w-auto object-contain" 
+            alt="Desktop Logo" 
+          />
         </div>
 
         {/* 2. Navigation */}

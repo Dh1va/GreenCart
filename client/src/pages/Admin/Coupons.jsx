@@ -195,7 +195,7 @@ fetchCouponsOnce();
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
                 >
                   <option value="PERCENT">%</option>
-                  <option value="FIXED">₹</option>
+                  <option value="FLAT">₹</option>
                 </select>
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
                    <RefreshCw className="w-3 h-3 text-gray-400" />

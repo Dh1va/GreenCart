@@ -1,39 +1,56 @@
 import Invoice from "../models/Invoice.js";
 import Order from "../models/Order.js";
+import Settings from "../models/Settings.js";
 import { invoiceTemplate } from "./pdfTemplates.js";
 import { generatePDF } from "./pdfGenerator.js";
 
-export const createInvoiceIfNotExists = async (order) => {
-  // 1️⃣ Prevent duplicates
-  const existing = await Invoice.findOne({ order: order._id });
+export const createInvoiceIfNotExists = async (orderDoc) => {
+  const orderId = orderDoc?._id || orderDoc;
+
+  const existing = await Invoice.findOne({ order: orderId });
   if (existing) return existing;
 
-  // 2️⃣ Fetch populated order (IMPORTANT)
-  const fullOrder = await Order.findById(order._id)
+  const order = await Order.findById(orderId)
     .populate("address")
     .populate("items.product", "name")
     .lean();
 
-  if (!fullOrder) throw new Error("Order not found for invoice");
+  if (!order) throw new Error("Order not found for invoice generation");
 
-  // 3️⃣ Build data object (THIS WAS MISSING)
+  const settings = await Settings.findOne().lean();
+
+  const prefix = settings?.invoicePrefix || "INV";
+  const start = Number(settings?.invoiceStartNumber || 1001);
+
+  const count = await Invoice.countDocuments();
+  const invoiceNumber = `${prefix}-${start + count}`;
+
   const data = {
-    ...fullOrder,
-    orderId: fullOrder._id.toString().slice(-6).toUpperCase(),
-    date: new Date(fullOrder.createdAt).toLocaleDateString("en-IN"),
+    ...order,
+    storeName: settings?.storeName || "My Store",
+    storeEmail: settings?.storeEmail || "",
+    supportPhone: settings?.supportPhone || "",
+    gstNumber: settings?.gstNumber || "",
+    invoiceTerms: settings?.invoiceTerms || "",
+    returnPolicy: settings?.returnPolicy || "",
+    currencySymbol: settings?.currencySymbol || "₹",
+
+    orderId: order._id.toString().slice(-6).toUpperCase(),
+    invoiceNumber,
+    date: new Date(order.createdAt).toLocaleDateString("en-IN"),
   };
 
-  // 4️⃣ Generate PDF
-  const pdfUint8 = await generatePDF(invoiceTemplate, data);
+  // generatePDF returns Uint8Array in your case
+  const pdfRaw = await generatePDF(invoiceTemplate, data);
 
-  // 5️⃣ Convert Uint8Array → Buffer
-  const pdfBuffer = Buffer.from(pdfUint8);
+  // ✅ FIX: Always convert to Buffer before saving in Mongo
+  const pdfBuffer = Buffer.isBuffer(pdfRaw) ? pdfRaw : Buffer.from(pdfRaw);
 
-  // 6️⃣ Save invoice
-  return await Invoice.create({
-    order: fullOrder._id,
-    invoiceNumber: `INV-${data.orderId}`,
-    issuedAt: new Date(),
+  const invoice = await Invoice.create({
+    order: order._id,
+    invoiceNumber,
     pdfBuffer,
   });
+
+  return invoice;
 };

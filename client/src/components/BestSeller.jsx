@@ -1,32 +1,28 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom'; // 👈 Added useNavigate
+import { useNavigate } from 'react-router-dom';
 import ProductCard from './ProductCard';
 
 const BestSeller = () => {
   const { products } = useAppContext();
-  const navigate = useNavigate(); // 👈 Initialize hook
+  const navigate = useNavigate();
 
-  // 1. Filter for "New & Trending" category
-  // 2. Fallback to first 4 products if specific category is empty (for demo purposes)
   const trendingProducts = products.filter(product => {
-      // Check if category is a string or array and includes the target
       if (Array.isArray(product.category)) {
           return product.category.includes("New & Trending");
       }
       return product.category === "New & Trending";
   });
 
-  // If we have trending products, use them; otherwise take the first 4 general products
+  // ✅ KEEP 10 ITEMS: This ensures we have enough products for 2 rows
   const displayProducts = trendingProducts.length > 0 
-      ? trendingProducts.slice(0, 4) 
-      : products.slice(0, 4);
+      ? trendingProducts.slice(0, 10) 
+      : products.slice(0, 10);
 
   return (
-    <section className="py-16 bg-white"> {/* Adjusted py-15 to standard py-16 */}
+    <section className="py-16 bg-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* --- Header --- */}
         <div className="text-center mb-12 space-y-3">
           <h2 className="text-3xl md:text-4xl font-bold text-[#1E2A5E]">
             New & Trending
@@ -36,14 +32,17 @@ const BestSeller = () => {
           </p>
         </div>
 
-        {/* --- Product Grid --- */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
+        {/* ✅ GRID CONFIGURATION FOR 2 ROWS:
+           - grid-cols-2: Mobile (2 per row x 5 rows)
+           - md:grid-cols-3: Tablets (3 per row)
+           - lg:grid-cols-5: Desktop (5 per row x 2 rows = 10 items)
+        */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 gap-y-10">
           {displayProducts.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}
         </div>
 
-        {/* --- Shop All Button --- */}
         <div className="mt-16 text-center">
             <button
                 onClick={() => {

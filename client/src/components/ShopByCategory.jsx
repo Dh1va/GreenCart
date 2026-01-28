@@ -14,12 +14,20 @@ const ShopByCategory = () => {
   const { categories, setSearchQuery } = useAppContext();
   const navigate = useNavigate();
 
+  const toSlug = (text) =>
+  text
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
   // Handle click on category
   const handleCategoryClick = (categoryName) => {
-    setSearchQuery(categoryName);
-    navigate("/products");
-    window.scrollTo(0, 0);
-  };
+  const slug = toSlug(categoryName);
+  navigate(`/products/${slug}`);
+  window.scrollTo(0, 0);
+};
 
   if (!categories || categories.length === 0) return null;
 
@@ -33,7 +41,7 @@ const ShopByCategory = () => {
             Shop by Category
           </h2>
           <p className="text-gray-500 text-lg font-medium">
-            Find the perfect toy for every playtime
+            Find the perfect book for every interest and passion
           </p>
         </div>
 

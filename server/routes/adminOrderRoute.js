@@ -3,9 +3,10 @@ import {
   getAllOrders,
   updateOrderStatus,
   updateOrderPayment,
-  getOrderInvoice,
+  getOrderInvoiceAdmin,
   getShippingLabel,
   createAdminOrder,
+  getAdminOrderDetails,
 } from "../controllers/orderController.js";
 
 import authUser from "../middleware/authUser.js";
@@ -15,12 +16,13 @@ const router = express.Router();
 
 /* ADMIN ORDERS */
 router.get("/orders", authUser, adminOnly, getAllOrders);
+router.get("/order/:orderId", authUser, adminOnly, getAdminOrderDetails);
 router.post("/create", authUser, adminOnly, createAdminOrder);
 router.patch("/order/status", authUser, adminOnly, updateOrderStatus);
 
 router.patch("/order/payment", authUser, adminOnly, updateOrderPayment);
 
-router.get("/order/invoice/:orderId", authUser, adminOnly, getOrderInvoice);
+router.get("/order/invoice/:orderId", authUser, adminOnly, getOrderInvoiceAdmin);
 router.get("/order/label/:orderId", authUser, adminOnly, getShippingLabel);
 
 export default router;

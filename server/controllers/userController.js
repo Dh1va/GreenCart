@@ -14,7 +14,7 @@ export const logout = async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-    path: "/", // Ensure the path matches where it was set
+    path: "/",
   });
 
   res.json({ success: true, message: "Logged out" });
@@ -22,10 +22,10 @@ export const logout = async (req, res) => {
 
 export const toggleWishlist = async (req, res) => {
   try {
-    const userId = req.userId; // from authUser middleware
+    const userId = req.userId; 
     const { productId } = req.body;
 
-    const user = await User.findById(userId); // ✅ FIXED HERE
+    const user = await User.findById(userId); 
 
     if (!user) {
       return res.json({ success: false, message: "User not found" });

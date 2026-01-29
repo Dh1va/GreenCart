@@ -27,6 +27,7 @@
     "mongoose": "^8.16.4",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.13",
     "pdfkit": "^0.17.2",
     "puppeteer": "^24.34.0",
     "razorpay": "^2.9.6",

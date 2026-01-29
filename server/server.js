@@ -48,7 +48,7 @@ app.use(cookieParser());
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://green-cart-silk-sigma.vercel.app",
+  "https://green-cart-blush.vercel.app",
 ];
 
 app.use(

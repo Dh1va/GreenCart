@@ -11,6 +11,17 @@
     display: none;
 
 }
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  overflow-x: hidden;
+}
 @layer utilities {
   /* --- Custom Scrollbar Logic --- */
   

@@ -47,7 +47,7 @@ export const AppContextProvider = ({ children }) => {
   const [invoicesLoaded, setInvoicesLoaded] = useState(false);
 
   /* ============================
-     EXISTING FUNCTIONS (UNCHANGED)
+     EXISTING FUNCTIONS 
   ============================ */
   const fetchUser = async () => {
     try {
@@ -55,45 +55,59 @@ export const AppContextProvider = ({ children }) => {
 
       if (data.success) {
         setUser(data.user);
-
         const dbCart = data.user.cartItems || {};
         setCartItems(dbCart);
+        
+        // ✅ Set DB wishlist and clear local one
         setWishlist(data.user.wishlist || []);
+        localStorage.removeItem("guest_wishlist"); 
 
-        // ✅ merge guest cart → user cart (only once after login)
         await mergeGuestCartToUserCart(dbCart);
       }
     } catch {
       setUser(null);
-
-      // fallback: if user not logged in, keep guest cart
       const guestCart = getGuestCart();
       setCartItems(guestCart);
+      
+      // ✅ Keep guest wishlist if auth fails
+      const guestWish = JSON.parse(localStorage.getItem("guest_wishlist")) || [];
+      setWishlist(guestWish);
     } finally {
       setAuthChecked(true);
     }
   };
+ const addToWishlist = async (productId) => {
+    // --- GUEST LOGIC ---
+    if (!user) {
+      const guestWishlist = JSON.parse(localStorage.getItem("guest_wishlist")) || [];
+      let updatedWishlist;
 
-  const addToWishlist = async (productId) => {
-  if (!user) {
-    toast.error("Please login to use wishlist");
-    setShowUserLogin(true);
-    return;
-  }
+      if (guestWishlist.includes(productId)) {
+        updatedWishlist = guestWishlist.filter((id) => id !== productId);
+        toast.success("Removed from wishlist");
+      } else {
+        updatedWishlist = [...guestWishlist, productId];
+        toast.success("Added to wishlist");
+      }
 
-  try {
-    const { data } = await axios.post("/api/user/wishlist", { productId });
-
-    if (data.success) {
-      setWishlist(data.wishlist || []);
-      toast.success(data.message);
-    } else {
-      toast.error(data.message || "Wishlist update failed");
+      localStorage.setItem("guest_wishlist", JSON.stringify(updatedWishlist));
+      setWishlist(updatedWishlist);
+      return;
     }
-  } catch (error) {
-    toast.error(error?.response?.data?.message || error.message);
-  }
-};
+
+    // --- LOGGED IN USER LOGIC ---
+    try {
+      const { data } = await axios.post("/api/user/wishlist", { productId });
+      if (data.success) {
+        setWishlist(data.wishlist || []);
+        toast.success(data.message);
+      } else {
+        toast.error(data.message || "Wishlist update failed");
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -420,9 +434,18 @@ export const AppContextProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    // Load Guest Cart
     const guestCart = JSON.parse(localStorage.getItem("guest_cart"));
     if (guestCart) setCartItems(guestCart);
-    fetchUser();
+
+    // ✅ ADD THIS: Load Guest Wishlist
+    const guestWish = JSON.parse(localStorage.getItem("guest_wishlist")) || [];
+    
+    fetchUser().then(() => {
+      // If after fetchUser, there is still no user, set the local wishlist
+      if (!user) setWishlist(guestWish);
+    });
+
     fetchProducts();
   }, []);
 

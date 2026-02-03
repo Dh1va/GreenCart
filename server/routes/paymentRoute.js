@@ -10,13 +10,13 @@ import authUser from "../middleware/authUser.js"; // Your auth middleware
 const paymentRouter = express.Router();
 
 // --- PhonePe Routes ---
-paymentRouter.post("/phonepe/create", authUser, createPhonePePayment);
-paymentRouter.post("/phonepe/validate", authUser, validatePhonePePayment);
+paymentRouter.post("/phonepe/create",  createPhonePePayment);
+paymentRouter.post("/phonepe/validate",  validatePhonePePayment);
 paymentRouter.post("/phonepe/callback", phonepeCallback); // No auth, called by PhonePe
 
 // --- Razorpay Routes ---
-paymentRouter.post("/razorpay/create", authUser, createRazorpayPayment);
-paymentRouter.post("/razorpay/verify", authUser, verifyRazorpayPayment);
+paymentRouter.post("/razorpay/create",  createRazorpayPayment);
+paymentRouter.post("/razorpay/verify",  verifyRazorpayPayment);
 
 // --- Settings Route (Used by Checkout.jsx) ---
 import { getEnabledGateway } from "../controllers/paymentController.js";

@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 const addressSchema = new mongoose.Schema({
-    userId: {type: String, required: true},
+    userId: {type: String, required: false},
+    isGuest: { type: Boolean, default: false },
     firstName: {type: String, required: true},
     lastName: {type: String, required: true},
     email: {type: String, required: true},

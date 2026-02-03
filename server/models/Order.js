@@ -5,8 +5,10 @@ const orderSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
-      required: true,
+      required: false,
     },
+    isGuest: { type: Boolean, default: false },
+    guestEmail: { type: String },
 
     items: [
       {
@@ -30,7 +32,7 @@ const orderSchema = new mongoose.Schema(
     address: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "address",
-      required: true,
+      required: false,
     },
 
     courier: {

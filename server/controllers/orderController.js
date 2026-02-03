@@ -147,59 +147,59 @@ export const cancelUserOrder = async (req, res) => {
 ===================================================== */
 export const placeOrderCOD = async (req, res) => {
   try {
-    const userId = req.userId;
-    const { items, addressId, courier } = req.body;
+    const userId = req.userId; 
+    const { items, addressId, guestAddress, courier } = req.body;
 
+    // 1. Basic Validation
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: "Cart is empty" });
     }
 
-    if (!addressId) {
-      return res.status(400).json({ success: false, message: "Address required" });
+    let finalAddressId;
+    let customerEmail;
+
+    // 2. Address Logic
+    if (userId) {
+      // --- LOGGED IN USER ---
+      if (!addressId) return res.status(400).json({ success: false, message: "Address ID required" });
+      
+      const address = await Address.findOne({ _id: addressId, userId: String(userId) });
+      if (!address) return res.status(400).json({ success: false, message: "Invalid address" });
+      
+      finalAddressId = address._id;
+      const userDoc = await User.findById(userId).lean();
+      customerEmail = userDoc?.email;
+    } else {
+      // --- GUEST USER ---
+      if (!guestAddress) return res.status(400).json({ success: false, message: "Guest details required" });
+      
+      // Create a Guest Address record
+      // NOTE: Ensure your Address Model has 'userId' as required: false
+      const newGuestAddr = await Address.create({
+        ...guestAddress,
+        userId: null, // Use null instead of "GUEST" to avoid ObjectId cast errors
+        isGuest: true,
+      });
+      finalAddressId = newGuestAddr._id;
+      customerEmail = guestAddress.email;
     }
 
-    const address = await Address.findOne({
-      _id: addressId,
-      userId: String(userId),
-    });
-
-    if (!address) {
-      return res.status(400).json({ success: false, message: "Invalid address" });
-    }
-
+    // 3. Pricing Logic (Using your existing safe Pick)
     const settings = await getSettingsSafe();
-    const taxPercent = Number(settings?.taxPercent ?? 2);
-
+    const taxPercent = Number(settings?.taxPercent ?? 0);
     const totalQuantity = items.reduce((acc, i) => acc + Number(i.quantity || 0), 0);
 
     let subtotal = 0;
     const orderItems = [];
 
     for (const item of items) {
-      if (!item?.product || !item?.quantity) {
-        return res.status(400).json({ success: false, message: "Invalid cart item" });
-      }
-
       const product = await Product.findById(item.product).lean();
+      if (!product) continue;
 
-      if (!product) {
-        return res.status(400).json({ success: false, message: "Product not found" });
-      }
-
-      // ✅ SAFE PRICE PICK (offerPrice OR price)
       const unitPrice = Number(product.offerPrice ?? product.price ?? 0);
-
-      if (!unitPrice || unitPrice <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid product price for: ${product.name || product._id}`,
-        });
-      }
-
       const qty = Number(item.quantity);
 
       subtotal += unitPrice * qty;
-
       orderItems.push({
         product: product._id,
         quantity: qty,
@@ -208,23 +208,18 @@ export const placeOrderCOD = async (req, res) => {
     }
 
     const tax = Math.floor(subtotal * (taxPercent / 100));
-
     let deliveryFee = Number(courier?.price || 0);
-    if (courier?.chargePerItem === true) {
-      deliveryFee = Number(courier?.price || 0) * totalQuantity;
-    }
+    if (courier?.chargePerItem) deliveryFee = deliveryFee * totalQuantity;
 
     const total = subtotal + tax + deliveryFee;
 
-    if (!Number.isFinite(total) || total <= 0) {
-      return res.status(400).json({ success: false, message: "Invalid total amount" });
-    }
-
+    // 4. Create Order
+    // IMPORTANT: In Order model, 'user' must be required: false
     const order = await Order.create({
-      user: userId,
+      user: userId || null, 
+      isGuest: !userId,
       items: orderItems,
-      address: address._id,
-
+      address: finalAddressId,
       courier: {
         courierId: courier?._id || null,
         name: courier?.name || "Standard Delivery",
@@ -232,49 +227,46 @@ export const placeOrderCOD = async (req, res) => {
         minDays: courier?.minDays || 0,
         maxDays: courier?.maxDays || 0,
       },
-
       payment: {
-        method: "cod", // ✅ must match enum
+        method: "cod",
         status: "pending",
       },
-
-      pricing: {
-        subtotal,
-        tax,
-        deliveryFee,
-        discount: 0,
-        total,
-      },
-
-      delivery: {
-        status: "order_placed",
-        trackingId: "",
-        trackingUrl: "",
-      },
+      pricing: { subtotal, tax, deliveryFee, discount: 0, total },
+      delivery: { status: "order_placed" },
     });
 
-   if (settings?.autoInvoice) {
-  try {
-    await createInvoiceIfNotExists(order);
-  } catch (e) {
-    console.error("Invoice creation failed (ignored):", e.message);
-  }
-}
+    // 5. Post-Order Actions (Wrapped in try/catch to prevent order rollback)
+    try {
+      if (settings?.autoInvoice) await createInvoiceIfNotExists(order);
+    } catch (e) { console.error("Invoice error ignored"); }
 
-    await sendOrderPlacedEmailIfEnabled({ userId, order });
+    try {
+      if (settings?.autoOrderNotification?.email && customerEmail) {
+        await sendMail({
+          to: customerEmail,
+          subject: `Order Placed - ${order._id.toString().slice(-6).toUpperCase()}`,
+          html: orderPlacedEmailTemplate({
+            storeName: settings.storeName || "Store",
+            orderId: order._id.toString().slice(-6).toUpperCase(),
+            total: total,
+            supportEmail: settings.storeEmail || "",
+          }),
+        });
+      }
+    } catch (e) { console.error("Email notification failed"); }
 
+    // 6. Socket Update
     const io = req.app.get("io");
-    io?.to("admins")?.emit("order:update", order);
-    io?.to(`user_${userId}`)?.emit("order:update", order);
+    if (io) {
+      io.to("admins").emit("order:update", order);
+      if (userId) io.to(`user_${userId}`).emit("order:update", order);
+    }
 
     return res.json({ success: true, order });
+
   } catch (err) {
-    console.error("COD ORDER ERROR:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Server error placing COD order",
-      error: err.message,
-    });
+    console.error("CRITICAL COD ERROR:", err);
+    return res.status(500).json({ success: false, message: "Order creation failed", error: err.message });
   }
 };
 

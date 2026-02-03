@@ -7,7 +7,7 @@ import authUser from '../middleware/authUser.js';
 
 const orderRouter = express.Router();
 
-orderRouter.post('/cod', authUser, placeOrderCOD);
+orderRouter.post('/cod', placeOrderCOD);
 orderRouter.get('/user', authUser, getUserOrders);
 orderRouter.get("/invoice/:orderId", authUser, getOrderInvoice);
 orderRouter.get("/details/:orderId", authUser, getUserOrderDetails);

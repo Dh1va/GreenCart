@@ -32,8 +32,8 @@ const ShopByCategory = () => {
   if (!categories || categories.length === 0) return null;
 
   return (
-    <section className="py-20">
-      <div className="container mx-auto py-10 px-4 md:px-8">
+    <section className="pt-20 pb-10">
+      <div className="container mx-auto pt-10 pb-0 px-4 md:px-8">
         
         {/* --- Header Section --- */}
         <div className="text-center mb-12 space-y-3">

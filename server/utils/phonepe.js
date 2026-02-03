@@ -63,20 +63,15 @@ export const phonepeCreatePayment = async ({
 }) => {
   const token = await getAuthToken();
 
-  // ✅ Standard V2 Payload (PG_CHECKOUT)
-  // This structure is the most reliable for getting the Bank Page URL
   const payload = {
     merchantOrderId: merchantTransactionId,
     amount: amountInPaise,
-    merchantUserId: String(userId),
-    // mobileNumber: mobileNumber || "9999999999", // Optional: Commenting out to reduce errors
+    merchantUserId: userId ? String(userId) : "GUEST_USER", // String required
+    mobileNumber: mobileNumber || "9999999999",
     callbackUrl: callbackUrl,
-    
     paymentFlow: {
       type: "PG_CHECKOUT",
-      merchantUrls: {
-        redirectUrl: redirectUrl 
-      }
+      merchantUrls: { redirectUrl: redirectUrl }
     }
   };
 
@@ -84,16 +79,11 @@ export const phonepeCreatePayment = async ({
     const { data } = await axios.post(
       `${BASE_URL}${process.env.PHONEPE_ENV === "PROD" ? "/pg" : ""}/checkout/v2/pay`,
       payload,
-      {
-        headers: {
-          Authorization: `O-Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
+      { headers: { Authorization: `O-Bearer ${token}`, "Content-Type": "application/json" } }
     );
     return data;
   } catch (error) {
-    console.error("Create Payment Error:", error.response?.data || error.message);
+    console.error("PhonePe API Error:", error.response?.data || error.message);
     throw error;
   }
 };

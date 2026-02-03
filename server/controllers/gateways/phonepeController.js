@@ -20,125 +20,91 @@ const getSettingsSafe = async () => {
 ===================================================== */
 export const createPhonePePayment = async (req, res) => {
   try {
-    const userId = req.userId;
-    const { items, addressId, courier } = req.body;
+    const userId = req.userId; // null for guests
+    const { items, addressId, guestAddress, courier } = req.body;
 
     const settings = await getSettingsSafe();
-
-    // 1. Validation
     if (!settings?.enablePhonePe) {
       return res.status(403).json({ success: false, message: "PhonePe is disabled" });
     }
-    if (!items || !items.length) {
-      return res.status(400).json({ success: false, message: "Cart is empty" });
-    }
-    if (!addressId) {
-      return res.status(400).json({ success: false, message: "Address required" });
+
+    let finalAddress;
+
+    // --- GUEST OR USER ADDRESS LOGIC ---
+    if (userId) {
+      if (!addressId) return res.status(400).json({ success: false, message: "Address ID required" });
+      finalAddress = await Address.findOne({ _id: addressId, userId: String(userId) }).lean();
+    } else {
+      if (!guestAddress) return res.status(400).json({ success: false, message: "Shipping details required" });
+      // Create guest address record to get a valid DB ID
+      finalAddress = await Address.create({
+        ...guestAddress,
+        userId: null,
+        isGuest: true,
+      });
     }
 
-    const address = await Address.findOne({ _id: addressId, userId: String(userId) }).lean();
-    if (!address) {
-      return res.status(400).json({ success: false, message: "Invalid address" });
-    }
+    if (!finalAddress) return res.status(400).json({ success: false, message: "Invalid address" });
 
-    // 2. Calculate Totals (Securely from DB)
+    // --- PRICING LOGIC ---
     const taxPercent = Number(settings?.taxPercent ?? 2);
     const totalQuantity = items.reduce((acc, i) => acc + Number(i.quantity || 0), 0);
-
     let subtotal = 0;
     const orderItems = [];
 
     for (const item of items) {
       const product = await Product.findById(item.product).lean();
-      if (!product) return res.status(400).json({ success: false, message: "Product not found" });
-
+      if (!product) continue;
       const unitPrice = Number(product.offerPrice ?? product.price ?? 0);
-      const qty = Number(item.quantity || 0);
-      
-      subtotal += unitPrice * qty;
-      orderItems.push({
-        product: product._id,
-        quantity: qty,
-        price: unitPrice,
-      });
+      subtotal += unitPrice * Number(item.quantity);
+      orderItems.push({ product: product._id, quantity: item.quantity, price: unitPrice });
     }
 
     const tax = Math.floor(subtotal * (taxPercent / 100));
     let deliveryFee = Number(courier?.price || 0);
-    if (courier?.chargePerItem === true) {
-      deliveryFee = Number(courier?.price || 0) * totalQuantity;
-    }
+    if (courier?.chargePerItem) deliveryFee *= totalQuantity;
 
     const total = subtotal + tax + deliveryFee;
+    const merchantTransactionId = `PP_${Date.now()}`;
 
-    // 3. Create Order in Database (PENDING state)
+    // --- CREATE PENDING ORDER ---
     const order = await Order.create({
-      user: userId,
+      user: userId || null,
+      isGuest: !userId,
       items: orderItems,
-      address: address._id,
+      address: finalAddress._id,
       courier: {
         courierId: courier?._id || null,
-        name: courier?.name || "Standard Delivery",
+        name: courier?.name || "Standard",
         price: deliveryFee,
-        minDays: courier?.minDays || 0,
-        maxDays: courier?.maxDays || 0,
       },
-      payment: {
-        method: "phonepe",
-        status: "pending",
-        // Temporary placeholder, will update with actual ID
-        transactionId: `TEMP_${Date.now()}` 
-      },
-      pricing: { subtotal, tax, deliveryFee, discount: 0, total },
-      delivery: { status: "order_placed", trackingId: "", trackingUrl: "" },
+      payment: { method: "phonepe", status: "pending", transactionId: merchantTransactionId },
+      pricing: { subtotal, tax, deliveryFee, total },
+      delivery: { status: "order_placed" },
     });
 
-    // 4. Generate Unique Transaction ID
-    // PhonePe requires a unique ID. We use PP_ + OrderID
-    const merchantTransactionId = `PP_${order._id.toString()}`;
-
-    // Update order with the real transaction ID
-    order.payment.transactionId = merchantTransactionId;
-    await order.save();
-
-    // 5. Prepare Redirect URLs
-    // The redirect URL tells PhonePe where to send the user after payment.
-    // We append ?orderId=... so our frontend knows which order to verify.
-    const baseRedirect = process.env.PHONEPE_REDIRECT_URL; 
-    const redirectUrl = `${baseRedirect}?orderId=${order._id}`; 
-    const callbackUrl = process.env.PHONEPE_CALLBACK_URL;
-
-    // 6. Call PhonePe API
+    // --- CALL PHONEPE UTILITY ---
+    const redirectUrl = `${process.env.PHONEPE_REDIRECT_URL}?orderId=${order._id}`;
+    
     const phonepeRes = await phonepeCreatePayment({
       merchantTransactionId,
-      amountInPaise: Math.round(total * 100), // Convert to Paise
-      userId,
+      amountInPaise: Math.round(total * 100),
+      userId: userId || "GUEST_USER",
       redirectUrl,
-      callbackUrl,
-      mobileNumber: address.phone || "9999999999"
+      callbackUrl: process.env.PHONEPE_CALLBACK_URL,
+      mobileNumber: finalAddress.phone || "9999999999"
     });
 
-    let finalRedirectUrl = 
-      phonepeRes?.instrumentResponse?.redirectInfo?.url || 
-      phonepeRes?.data?.instrumentResponse?.redirectInfo?.url ||
-      phonepeRes?.redirectUrl ||
-      phonepeRes?.data?.redirectUrl;
+    // Handle different response structures from utility
+    const finalUrl = phonepeRes?.data?.instrumentResponse?.redirectInfo?.url || phonepeRes?.redirectUrl;
 
-    if (!finalRedirectUrl) {
-      console.error("PhonePe Error: No URL found. Full Response:", JSON.stringify(phonepeRes, null, 2));
-      return res.status(500).json({ success: false, message: "Payment Gateway Error" });
-    }
+    if (!finalUrl) throw new Error("Gateway failed to provide redirect URL");
 
-    // 3. Success Response
-    return res.json({
-      success: true,
-      orderId: order._id,
-      redirectUrl: finalRedirectUrl,
-    });
+    return res.json({ success: true, redirectUrl: finalUrl });
 
   } catch (e) {
-    console.error("PhonePe Init Error:", e);
-    return res.status(500).json({ success: false, message: e.message || "Payment initiation failed" });
+    console.error("PHONEPE_INIT_ERROR:", e);
+    return res.status(500).json({ success: false, message: e.message || "Payment Failed" });
   }
 };
 

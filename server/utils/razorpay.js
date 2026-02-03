@@ -18,6 +18,10 @@ export const getRazorpayInstance = () => {
   return razorpayInstance;
 };
 
+/**
+ * Verifies the signature sent by Razorpay frontend/webhook
+ * Works for both Users and Guests
+ */
 export const verifyRazorpaySignature = ({
   razorpay_order_id,
   razorpay_payment_id,

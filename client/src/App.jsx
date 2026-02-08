@@ -48,7 +48,7 @@ import CategoryGroup from "./pages/CategoryGroup";
 import Wishlist from "./pages/Wishlist";
 import OrderDetails from "./pages/OrderDetails";
 import AdminOrderDetails from "./pages/Admin/AdminOrderDetails";
-
+import OrderSuccess from './pages/OrderSuccess';
 const App = () => {
   const { showUserLogin, user, authChecked } = useAppContext();
 
@@ -117,6 +117,8 @@ const App = () => {
             </UserLayout>
           }
         />
+
+        <Route path="/order-success/:orderId" element={<OrderSuccess />} />
 
         <Route
           path="/product/:id"

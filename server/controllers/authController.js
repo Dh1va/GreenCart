@@ -254,12 +254,12 @@ export const registerWithPassword = async (req, res) => {
    LOGOUT 
    ===================================================== */
 export const logout = async (req, res) => {
+  res.setHeader("Clear-Site-Data", '"cookies", "storage"'); 
   res.clearCookie("token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+    secure: true,
+    sameSite: "none",
     path: "/",
   });
-
-  res.json({ success: true, message: "Logged out" });
+  res.json({ success: true, message: "Logged out completely" });
 };

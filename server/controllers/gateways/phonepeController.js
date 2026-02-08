@@ -19,26 +19,28 @@ const getSettingsSafe = async () => {
    1. INITIATE PAYMENT
 ===================================================== */
 export const createPhonePePayment = async (req, res) => {
-  try {
-    const userId = req.userId; // null for guests
+ try {
+    const userId = req.userId; // Now correctly set
     const { items, addressId, guestAddress, courier } = req.body;
 
     const settings = await getSettingsSafe();
-    if (!settings?.enablePhonePe) {
-      return res.status(403).json({ success: false, message: "PhonePe is disabled" });
-    }
+    if (!settings?.enablePhonePe) return res.status(403).json({ success: false, message: "PhonePe is disabled" });
 
     let finalAddress;
 
-    // --- GUEST OR USER ADDRESS LOGIC ---
     if (userId) {
+      // 🟢 LOGGED IN
       if (!addressId) return res.status(400).json({ success: false, message: "Address ID required" });
       finalAddress = await Address.findOne({ _id: addressId, userId: String(userId) }).lean();
     } else {
+      // 🟡 GUEST
       if (!guestAddress) return res.status(400).json({ success: false, message: "Shipping details required" });
-      // Create guest address record to get a valid DB ID
+
+      // 🔥 FIX: Sanitize input
+      const { _id, ...cleanAddress } = guestAddress;
+
       finalAddress = await Address.create({
-        ...guestAddress,
+        ...cleanAddress,
         userId: null,
         isGuest: true,
       });
@@ -163,40 +165,48 @@ export const validatePhonePePayment = async (req, res) => {
    3. WEBHOOK (Remains the same)
 ===================================================== */
 export const phonepeCallback = async (req, res) => {
-   // ... (Paste the webhook function from the previous answer here)
-   try {
-    // 1. Verify Authorization Header (SHA256(user:pass))
-    const authHeader = req.headers['authorization'];
-    if (process.env.WEBHOOK_USER && authHeader) {
-         // Add verification logic if needed
+  try {
+    const clientUrl = process.env.CLIENT_URL || "http://3.80.71.191";
+
+    // 1. HANDLE BROWSER REDIRECT (GET)
+    if (req.method === 'GET') {
+      const { code, merchantOrderId, orderId } = req.query;
+      const targetOrderId = orderId || (merchantOrderId ? merchantOrderId.replace("PP_", "") : "");
+      
+      // Redirect to React Frontend
+      return res.redirect(`${clientUrl}/payment/phonepe?orderId=${targetOrderId}`);
     }
 
-    // 2. Decode Payload
-    const { state, merchantOrderId } = req.body.payload || {};
+    // 2. HANDLE WEBHOOK (POST)
+    if (req.method === 'POST') {
+        const { response } = req.body;
+        if (!response) return res.status(200).send("OK");
 
-    if (state && merchantOrderId) {
-        const orderId = merchantOrderId.replace("PP_", "");
-        const order = await Order.findById(orderId);
+        const decodedBuffer = Buffer.from(response, 'base64');
+        const decodedBody = JSON.parse(decodedBuffer.toString('utf-8'));
+        const { state, merchantTransactionId, code } = decodedBody.data || {};
 
-        if (order) {
-            if (state === "COMPLETED" && order.payment.status !== "paid") {
-                order.payment.status = "paid";
-                await order.save();
-                await createInvoiceIfNotExists(order);
-                
-                // Socket Emit
-                const io = req.app.get("io");
-                io?.to(`user_${order.user}`)?.emit("order:update", order);
-            } else if (state === "FAILED") {
-                order.payment.status = "failed";
-                await order.save();
-            }
+        if (merchantTransactionId) {
+             const order = await Order.findOne({ 'payment.transactionId': merchantTransactionId });
+             if (order) {
+                 if (code === "PAYMENT_SUCCESS" && state === "COMPLETED" && order.payment.status !== "paid") {
+                     order.payment.status = "paid";
+                     await order.save();
+                     await createInvoiceIfNotExists(order);
+                 } else if (code === "PAYMENT_ERROR" || state === "FAILED") {
+                     order.payment.status = "failed";
+                     await order.save();
+                 }
+             }
         }
+        return res.status(200).send("OK");
     }
 
-    res.status(200).send("OK");
   } catch (error) {
-    console.error("Webhook Error:", error);
-    res.status(500).send("Error");
+    console.error("Callback Error:", error);
+    if (req.method === 'GET') {
+        return res.redirect(process.env.CLIENT_URL || "/");
+    }
+    res.status(500).json({ error: "Internal Error" });
   }
-};
+}

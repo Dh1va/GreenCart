@@ -6,17 +6,19 @@ const authUser = (req, res, next) => {
     const token = req.cookies.token;
 
     if (!token) {
-      return next();
+      return next(); // No token? Proceed as Guest
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    req.userId = decoded.id;
-    req.user = decoded; // 🔥 REQUIRED FOR ADMIN
-
+    req.userId = decoded.id; // Token valid? Set User ID
+    req.user = decoded; 
+    
     next();
-  } catch {
-    return res.status(401).json({ success: false });
+  } catch (error) {
+    // If token is invalid/expired, ignore it and treat as Guest
+    // instead of blocking the request with 401
+    req.userId = null;
+    next();
   }
 };
 

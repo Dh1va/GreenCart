@@ -178,7 +178,7 @@ fetchUsersOnce();
   return (
     // FIX 1: Removed 'h-screen', 'overflow-hidden', 'flex-1'. 
     // We let the AdminLayout handle the height and scrolling.
-    <div className="relative bg-gray-100 font-sans min-h-full">
+    <div className="relative  font-sans min-h-full">
       
       {/* FIX 2: Removed 'overflow-y-auto' and 'no-scrollbar'. This div now just pads content. */}
       <div className="p-6 md:p-8">

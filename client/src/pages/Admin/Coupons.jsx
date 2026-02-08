@@ -133,7 +133,7 @@ fetchCouponsOnce();
   };
 
   return (
-    <div className="p-6 md:p-10  mx-auto space-y-10 bg-gray-50/50 min-h-screen font-sans">
+    <div className="p-6 md:p-10  mx-auto space-y-10 min-h-screen font-sans">
       
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">

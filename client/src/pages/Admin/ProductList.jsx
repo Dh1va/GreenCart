@@ -54,7 +54,7 @@ const ProductList = () => {
   /* ---------------- UI ---------------- */
 
   return (
-    <div className="flex-1 h-screen overflow-hidden flex flex-col relative bg-gray-100 font-sans">
+    <div className="flex-1 h-screen overflow-hidden flex flex-col relative  font-sans">
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto no-scrollbar p-6 md:p-8">
         {/* Header */}

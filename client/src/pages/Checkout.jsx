@@ -14,7 +14,7 @@ const Checkout = () => {
   const {
     cartItems, products, currency, getCartAmount, axios,
     user, navigate, setShowUserLogin, setRedirectAfterLogin,
-    setCartItems, authChecked,
+    setCartItems, authChecked,clearCart,
   } = useAppContext();
 
   // --- DATA STATES ---
@@ -110,7 +110,14 @@ const Checkout = () => {
   };
 
   const handleStartEdit = () => {
-    if (user) setEditFormData({ ...selectedAddress });
+    if (user && selectedAddress) {
+      setEditFormData({ 
+        ...selectedAddress,
+        state: selectedAddress.state || "",   
+        zipCode: selectedAddress.zipCode || "",
+        phone: selectedAddress.phone || ""
+      });
+    }
     setIsEditing(true);
     setShowAddressList(false);
   };
@@ -152,7 +159,7 @@ const Checkout = () => {
       if (!selectedAddress?._id) return toast.error("Please select an address");
       if (isEditing) return toast.error("Please save address changes first");
     } else {
-      const required = ['firstName', 'email', 'phone', 'street', 'city'];
+      const required = ['firstName', 'email', 'phone', 'street', 'state', 'city'];
       for (let field of required) if (!editFormData[field]) return toast.error(`Please fill in ${field}`);
     }
     
@@ -176,6 +183,7 @@ const Checkout = () => {
       if (data.success) {
         toast.success("Order Placed Successfully!");
         setCartItems({});
+        clearCart();
         localStorage.removeItem("guest_cart");
         localStorage.removeItem("guest_checkout_address");
         navigate(user ? "/my-orders" : "/"); 
@@ -210,6 +218,7 @@ const Checkout = () => {
             await axios.post("/api/payments/razorpay/verify", { ...response, ...payload });
             toast.success("Payment Successful!"); 
             setCartItems({}); 
+            clearCart();
             localStorage.removeItem("guest_cart");
             localStorage.removeItem("guest_checkout_address");
             navigate(user ? "/my-orders" : "/");
@@ -248,24 +257,8 @@ const Checkout = () => {
   const shippingFee = selectedCourier?.price || 0;
   const totalAmount = subtotalValue + taxAmount + shippingFee - discount;
 
-  const FormField = ({ label, name, value, icon: Icon, fullWidth, type = "text" }) => (
-    <div className={`flex flex-col ${fullWidth ? 'md:col-span-2' : ''}`}>
-      <label className="text-[11px] uppercase text-slate-400 font-bold mb-1.5 tracking-wider flex items-center gap-2">
-        {Icon && <Icon className="w-3 h-3" />} {label}
-      </label>
-      {isEditing ? (
-        <input 
-          type={type} name={name} value={editFormData[name] || ""} 
-          onChange={handleInputChange} 
-          className="bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 rounded-xl px-4 py-3 text-sm text-slate-700 outline-none transition-all" 
-        />
-      ) : (
-        <div className="bg-slate-50/50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 min-h-[46px] flex items-center">
-          { (user ? value : editFormData[name]) || "—"}
-        </div>
-      )}
-    </div>
-  );
+  // ❌ REMOVED FormField from here
+  // We are now using the one defined at the bottom
 
   return (
     <div className="min-h-screen  pt-6 md:pt-10 pb-20 antialiased">
@@ -302,13 +295,15 @@ const Checkout = () => {
 
               <div className="p-6 md:p-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                  <FormField label="First Name" name="firstName" value={selectedAddress?.firstName} icon={UserIcon} />
-                  <FormField label="Last Name" name="lastName" value={selectedAddress?.lastName} />
-                  <FormField label="Email" name="email" value={selectedAddress?.email} icon={Mail} />
-                  <FormField label="Phone" name="phone" value={selectedAddress?.phone} icon={Phone} />
-                  <FormField label="Street Address" name="street" value={selectedAddress?.street} icon={MapPin} fullWidth />
-                  <FormField label="City" name="city" value={selectedAddress?.city} />
-                  <FormField label="Zip" name="zipCode" value={selectedAddress?.zipCode} />
+                  {/* ✅ UPDATED: Passing props to FormField */}
+                  <FormField label="First Name" name="firstName" value={selectedAddress?.firstName} icon={UserIcon} isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
+                  <FormField label="Last Name" name="lastName" value={selectedAddress?.lastName} isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
+                  <FormField label="Email" name="email" value={selectedAddress?.email} icon={Mail} isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
+                  <FormField label="Phone" name="phone" value={selectedAddress?.phone} icon={Phone} isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
+                  <FormField label="Street Address" name="street" value={selectedAddress?.street} icon={MapPin} fullWidth isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
+                  <FormField label="City" name="city" value={selectedAddress?.city} isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
+                  <FormField label="State" name="state" value={selectedAddress?.state} isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
+                  <FormField label="Zip" name="zipCode" value={selectedAddress?.zipCode} isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
                 </div>
                 {isEditing && (
                   <button onClick={handleSaveEdit} className="mt-8 w-full bg-slate-900 text-white py-3.5 md:py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 shadow-lg transition-all">
@@ -440,5 +435,25 @@ const Checkout = () => {
     </div>
   );
 };
+
+// ✅ MOVED OUTSIDE: This prevents it from re-rendering on every keystroke
+const FormField = ({ label, name, value, icon: Icon, fullWidth, type = "text", isEditing, editFormData, handleInputChange, user }) => (
+  <div className={`flex flex-col ${fullWidth ? 'md:col-span-2' : ''}`}>
+    <label className="text-[11px] uppercase text-slate-400 font-bold mb-1.5 tracking-wider flex items-center gap-2">
+      {Icon && <Icon className="w-3 h-3" />} {label}
+    </label>
+    {isEditing ? (
+      <input 
+        type={type} name={name} value={editFormData[name] || ""} 
+        onChange={handleInputChange} 
+        className="bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 rounded-xl px-4 py-3 text-sm text-slate-700 outline-none transition-all" 
+      />
+    ) : (
+      <div className="bg-slate-50/50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 min-h-[46px] flex items-center">
+        { (user ? value : editFormData[name]) || "—"}
+      </div>
+    )}
+  </div>
+);
 
 export default Checkout;

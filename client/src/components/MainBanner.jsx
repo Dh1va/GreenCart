@@ -94,7 +94,7 @@ const MainBanner = () => {
 
               {/* Overlay Content Container */}
               <div className="absolute inset-0">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center md:items-start text-center md:text-left">
+                <div className=" mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center md:items-start text-center md:text-left">
                   
                   {/* 👇 md:ml-16 to push text past the arrow */}
                   <div className="max-w-xl lg:max-w-2xl space-y-6 animate-fade-in-up md:ml-16">

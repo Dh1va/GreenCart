@@ -1,164 +1,119 @@
-import React, { useState, useEffect } from "react";
-import { Star, ChevronLeft, ChevronRight } from "lucide-react";
+import React from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination, Autoplay } from "swiper/modules";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
 
 const reviews = [
-  { id: 1, name: "Arjun S", role: "Bookstore Owner", text: "Excellent book quality and fast delivery.\nCustomers are very happy." },
-  { id: 2, name: "Meera K", role: "School Library", text: "Great collection with affordable pricing.\nPerfect for bulk orders." },
-  { id: 3, name: "Daniel P", role: "College Book Supplier", text: "Reliable service and timely dispatch.\nBooks arrived in perfect condition." },
-  { id: 4, name: "Priya R", role: "Online Book Seller", text: "Huge variety of titles and smooth ordering.\nHighly recommended for resellers." },
-  { id: 5, name: "Rahul M", role: "Wholesale Retailer", text: "Best wholesale rates and quick support.\nEasy to restock anytime." },
-  { id: 6, name: "Sanjana V", role: "Tuition Center", text: "Perfect for exam guides and study books.\nGreat packaging and fast delivery." },
-  { id: 7, name: "Joseph L", role: "Public Library", text: "Consistent quality with good discounts.\nReaders love the new arrivals." },
-  { id: 8, name: "Anitha S", role: "Book Distributor", text: "Fast delivery and clean invoicing.\nSupport team is always helpful." },
+  { id: 1, name: "Lucas M", role: "Small Business Owner", title: "Exceptional Support and Clean Code", text: "I was impressed by how fast the support team responded to my questions. Even as someone with basic coding knowledge, I found the theme incredibly easy to work with." },
+  { id: 2, name: "Arjun S", role: "Bookstore Owner", title: "High Quality & Fast Delivery", text: "Excellent book quality and fast delivery. Customers are very happy with the condition of the books. Highly recommended for bulk orders." },
+  { id: 3, name: "Meera K", role: "School Library", title: "Great collection with affordable pricing", text: "Great collection with affordable pricing. Perfect for bulk orders. The team helped us curate the perfect list for our students." },
+  { id: 4, name: "Daniel P", role: "College Book Supplier", title: "Reliable service and timely dispatch", text: "Reliable service and timely dispatch. Books arrived in perfect condition. Streamlined our inventory management significantly." },
+  { id: 5, name: "Rahul M", role: "Wholesale Retailer", title: "Best wholesale rates in the market", text: "Best wholesale rates and quick support. Easy to restock anytime. Their digital invoicing makes bookkeeping a breeze." },
+  { id: 6, name: "Sarah J", role: "Retail Manager", title: "Top Tier Support", text: "The support team is top tier. They helped me set up my entire store in less than a day. Truly grateful!" },
+  { id: 7, name: "Kevin T", role: "Entrepreneur", title: "Cleanest Codebase", text: "I've worked with many themes, but this one has the cleanest codebase I've ever seen. Extremely fast and lightweight." },
+  { id: 8, name: "Elena G", role: "Library Curator", title: "Beautiful Aesthetics", text: "The design is just stunning. It gives our online presence a very professional and modern look." }
 ];
 
+const CustomStar = () => (
+  <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path fillRule="evenodd" clipRule="evenodd" d="M13 26C20.1797 26 26 20.1797 26 13C26 5.8203 20.1797 0 13 0C5.8203 0 0 5.8203 0 13C0 20.1797 5.8203 26 13 26ZM15.1358 10.1279L13.3242 4.56764C13.2224 4.25523 12.7776 4.25523 12.6758 4.56764L10.8642 10.1279C10.8187 10.2676 10.6877 10.3623 10.54 10.3623H4.67474C4.34494 10.3623 4.2075 10.7813 4.47397 10.9744L9.22119 14.414C9.34018 14.5002 9.38997 14.6526 9.34461 14.7918L7.53184 20.3556C7.43014 20.6678 7.79 20.9268 8.05681 20.7335L12.7992 17.2974C12.9189 17.2107 13.0811 17.2107 13.2008 17.2974L17.9432 20.7335C18.21 20.9268 18.5699 20.6678 18.4682 20.3556L16.6554 14.7918C16.61 14.6526 16.6598 14.5002 16.7788 14.414L21.526 10.9744C21.7925 10.7813 21.6551 10.3623 21.3252 10.3623H15.46C15.3123 10.3623 15.1813 10.2676 15.1358 10.1279Z" fill="#FFAB00" />
+  </svg>
+);
+
 const Testimonials = () => {
-  
-
-  const itemsPerView = 4;
-  const totalOriginal = reviews.length;
-
-  const extendedReviews = [...reviews, ...reviews.slice(0, itemsPerView)];
-
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(true);
-
-  const handleNext = () => {
-    if (currentIndex >= totalOriginal) return;
-    setIsTransitioning(true);
-    setCurrentIndex((prev) => prev + itemsPerView);
-  };
-
-  const handlePrev = () => {
-    if (currentIndex === 0) {
-      setIsTransitioning(false);
-      setCurrentIndex(totalOriginal);
-
-      setTimeout(() => {
-        setIsTransitioning(true);
-        setCurrentIndex(totalOriginal - itemsPerView);
-      }, 50);
-    } else {
-      setIsTransitioning(true);
-      setCurrentIndex((prev) => prev - itemsPerView);
-    }
-  };
-
-  const handleDotClick = (pageIndex) => {
-    setIsTransitioning(true);
-    setCurrentIndex(pageIndex * itemsPerView);
-  };
-
-  useEffect(() => {
-    if (currentIndex === totalOriginal) {
-      const timer = setTimeout(() => {
-        setIsTransitioning(false);
-        setCurrentIndex(0);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [currentIndex, totalOriginal]);
-
   return (
-    // Full width background
-    <section className="w-full py-16  bg-[#F0F4F8] select-none">
-      {/* Content aligned to UserLayout padding */}
+    <section className="w-full py-20 bg-[#F8FAFC] overflow-hidden">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="mb-10 text-center">
-          <h2 className="text-[#1E2A5E] text-3xl font-bold mb-2">Reviews</h2>
-          <p className="text-gray-500">What do people think about us?</p>
+        
+        <div className="text-center mb-12 space-y-3">
+          <h2 className="text-3xl md:text-5xl font-bold text-[#1E2A5E]">Reviews</h2>
+          <p className="text-[#1E2A5E] text-md my-8 font-medium">What do people think about us?</p>
         </div>
 
-        {/* Slider */}
-        <div className="w-full overflow-hidden mb-8">
-          <div
-            className="flex"
-            style={{
-              transform: `translateX(-${currentIndex * 25}%)`,
-              transition: isTransitioning ? "transform 0.5s ease-in-out" : "none",
+        <div className="relative w-full">
+          <style>
+            {`
+              .review-pagination .swiper-pagination-bullet {
+                background-color: #CBD5E0 !important;
+                opacity: 1;
+                width: 8px;
+                height: 8px;
+                margin: 0 8px !important;
+                transition: all 0.3s ease;
+              }
+              .review-pagination .swiper-pagination-bullet-active {
+                background-color: #1E2A5E !important;
+                
+              }
+            `}
+          </style>
+
+          <Swiper
+            modules={[Navigation, Pagination, Autoplay]}
+            spaceBetween={24}
+            slidesPerView={1}
+            slidesPerGroup={1}
+            loop={true}
+            pagination={{ el: ".review-pagination", clickable: true }}
+            navigation={{ nextEl: ".rev-next", prevEl: ".rev-prev" }}
+            breakpoints={{
+              640: { slidesPerView: 2, slidesPerGroup: 2 },
+              1024: { slidesPerView: 4, slidesPerGroup: 4 },
             }}
+            className="pb-16"
           >
-            {extendedReviews.map((review, index) => (
-              <div
-                key={`${review.id}-${index}`}
-                className="w-full md:w-1/4 flex-shrink-0 px-3"
-              >
-                <div className="bg-white p-6 rounded-xl shadow-sm h-full border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+            {reviews.map((review) => (
+              <SwiperSlide key={review.id}>
+                {/* - aspect-square: Forces a 1:1 ratio
+                  - group/item: Used to trigger hover on child heading
+                */}
+                <div className="group/item bg-white p-8 border border-gray-200 rounded-3xl aspect-square w-full flex flex-col justify-between">
+                  
                   <div>
-                    <div className="flex gap-1 mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className="w-4 h-4 fill-yellow-400 text-yellow-400"
-                        />
-                      ))}
+                    <div className="flex gap-1 mb-6">
+                      {[...Array(5)].map((_, i) => <CustomStar key={i} />)}
                     </div>
 
-                    <h3 className="font-bold text-[#1E2A5E] text-md mb-2 truncate">
-                      {review.text.split(".")[0]}
+                    {/* Heading: 20px, Medium Weight, Blue-ish color, Hover Underline & Color Change */}
+                    <h3 className="text-[#1E2A5E] font-medium leading-tight mb-3 transition-colors duration-300 group-hover/item:text-[#00838f] group-hover/item:underline" 
+                        style={{ fontSize: '20px' }}>
+                      {review.title}
                     </h3>
 
-                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 whitespace-pre-line">
-                      "{review.text}"
+                    {/* Text: 15px, Same color as Heading */}
+                    <p className="text-[#1E2A5E] leading-relaxed line-clamp-3 opacity-90" 
+                       style={{ fontSize: '15px' }}>
+                      {review.text}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-50">
-                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#1E2A5E] font-bold text-xs">
+                  <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
+                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center font-bold text-[#1E2A5E] shrink-0">
                       {review.name.charAt(0)}
                     </div>
-                    <div>
-                      <h4 className="text-[#1E2A5E] font-bold text-sm">
-                        {review.name}
-                      </h4>
-                      <p className="text-gray-400 text-[10px] uppercase tracking-wider">
-                        {review.role}
-                      </p>
+                    <div className="min-w-0">
+                      <h4 className="text-[#1E2A5E] font-bold text-sm leading-none truncate">— {review.name}</h4>
+                      <p className="text-gray-500 text-[12px] mt-1 truncate">{review.role}</p>
                     </div>
                   </div>
                 </div>
-              </div>
+              </SwiperSlide>
             ))}
+          </Swiper>
+
+          <div className="flex items-center justify-center gap-10 mt-8">
+            <button className="rev-prev text-[#CBD5E0] cursor-pointer hover:text-[#1E2A5E] transition-colors">
+              <ChevronLeft size={26} />
+            </button>
+            <div className="review-pagination !static !w-auto flex items-center"></div>
+            <button className="rev-next text-[#CBD5E0] cursor-pointer hover:text-[#1E2A5E] transition-colors">
+              <ChevronRight size={26} />
+            </button>
           </div>
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center justify-center gap-6">
-          <button
-            onClick={handlePrev}
-            className="w-10 h-10 flex items-center justify-center rounded-full  text-[#1E2A5E]  "
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          <div className="flex gap-2">
-            {[...Array(Math.ceil(totalOriginal / itemsPerView))].map(
-              (_, pageIndex) => {
-                const activePage = Math.floor(
-                  (currentIndex % totalOriginal) / itemsPerView
-                );
-
-                return (
-                  <button
-                    key={pageIndex}
-                    onClick={() => handleDotClick(pageIndex)}
-                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                      activePage === pageIndex
-                        ? "bg-[#1E2A5E] w-4"
-                        : "bg-gray-300 hover:bg-gray-400"
-                    }`}
-                  />
-                );
-              }
-            )}
-          </div>
-
-          <button
-            onClick={handleNext}
-            className="w-10 h-10 flex items-center justify-center rounded-full  text-[#1E2A5E] "
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
         </div>
       </div>
     </section>

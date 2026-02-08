@@ -1,33 +1,33 @@
-import React from 'react';
-import { useAppContext } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
-import ProductCard from './ProductCard';
+import React from "react";
+import { useAppContext } from "../context/AppContext";
+import { useNavigate } from "react-router-dom";
+import ProductCard from "./ProductCard";
 
 const BestSeller = () => {
   const { products } = useAppContext();
   const navigate = useNavigate();
 
-  const trendingProducts = products.filter(product => {
-      if (Array.isArray(product.category)) {
-          return product.category.includes("New & Trending");
-      }
-      return product.category === "New & Trending";
+  const trendingProducts = products.filter((product) => {
+    if (Array.isArray(product.category)) {
+      return product.category.includes("New & Trending");
+    }
+    return product.category === "New & Trending";
   });
 
   // ✅ KEEP 10 ITEMS: This ensures we have enough products for 2 rows
-  const displayProducts = trendingProducts.length > 0 
-      ? trendingProducts.slice(0, 10) 
+  const displayProducts =
+    trendingProducts.length > 0
+      ? trendingProducts.slice(0, 10)
       : products.slice(0, 10);
 
   return (
-    <section className="pt-10 pb-16  bg-white">
-      <div className="container mx-auto px-3 sm:px-6 lg:px-8">
-        
+    <section className="pt-10 md:pt-20 md:pb-10 mb-10 bg-white">
+      <div className="container pt-10 mx-auto px-3 sm:px-6 lg:px-8">
         <div className="text-center mb-8 sm:mb-12 space-y-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1E2A5E]">
+          <h2 className="text-3xl md:text-5xl font-bold text-[#1E2A5E]">
             New & Trending
           </h2>
-          <p className="text-gray-500 text-sm sm:text-lg font-medium tracking-wide">
+          <p className="text-[#1E2A5E] text-md my-8 font-medium">
             Fresh arrivals this season
           </p>
         </div>
@@ -43,20 +43,31 @@ const BestSeller = () => {
         </div>
 
         <div className="mt-12 sm:mt-16 text-center px-4">
-            <button
-                onClick={() => {
-                    navigate('/products');
-                    window.scrollTo(0, 0);
-                }}
-                className="w-full sm:w-auto px-10 py-3 rounded-full border-2 border-[#1E2A5E] text-[#1E2A5E] font-bold text-sm tracking-wide uppercase hover:bg-[#1E2A5E] hover:text-white transition-all duration-300"
-            >
-                Shop All Products
-            </button>
+          <button
+            onClick={() => {
+              navigate("/products");
+              window.scrollTo(0, 0);
+            }}
+            /* Added 'group' for hover targeting and 'relative/overflow-hidden' for the slide effect */
+            className="group relative w-full sm:w-auto px-10 py-3 h-[48px] rounded-md border-2 border-[#1E2A5E] bg-white text-[#1E2A5E] font-bold text-sm tracking-wide uppercase transition-all duration-300 overflow-hidden"
+          >
+            {/* Layer 1: Initial State (moves UP and out) */}
+            <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-in-out group-hover:-translate-y-full">
+              <span className="whitespace-nowrap">Shop All Products</span>
+            </div>
+
+            {/* Layer 2: Hover State (moves from BOTTOM to center) */}
+            <div className="absolute inset-0 flex items-center justify-center bg-[#1E2A5E] text-white translate-y-full transition-transform duration-500 ease-in-out group-hover:translate-y-0">
+              <span className="whitespace-nowrap">Shop All Products</span>
+            </div>
+
+            {/* Invisible Spacer: Maintains the button's width/height automatically */}
+            <div className="invisible px-2">Shop All Products</div>
+          </button>
         </div>
       </div>
     </section>
   );
 };
-
 
 export default BestSeller;

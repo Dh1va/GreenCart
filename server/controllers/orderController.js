@@ -91,7 +91,7 @@ export const getUserOrderDetails = async (req, res) => {
 ===================================================== */
 export const cancelUserOrder = async (req, res) => {
   try {
-    const { orderId } = req.body;
+    const { orderId, reason } = req.body; // Added 'reason' to body destructuring
     const userId = req.userId;
 
     const settings = await getSettingsSafe();
@@ -103,12 +103,17 @@ export const cancelUserOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    // Security
+    // Security: Ensure the user owns this order
     if (String(order.user) !== String(userId)) {
       return res.status(403).json({ success: false, message: "Unauthorized action" });
     }
 
-    // Can cancel only before shipped
+    // Check: Is it already cancelled?
+    if (order.delivery.status === "cancelled") {
+        return res.status(400).json({ success: false, message: "Order is already cancelled." });
+    }
+
+    // Check: Can it be cancelled? (Only before shipping)
     if (order.delivery.status !== "order_placed" && order.delivery.status !== "processing") {
       return res.status(400).json({
         success: false,
@@ -128,14 +133,25 @@ export const cancelUserOrder = async (req, res) => {
       });
     }
 
+    // Update Status
     order.delivery.status = "cancelled";
+    if (reason) order.cancelReason = reason; // Optional: Save reason if your schema supports it
+    
     await order.save();
 
-    const io = req.app.get("io");
-    io.to("admins").emit("order:update", order);
-    io.to(`user_${userId}`).emit("order:update", order);
+    // 🔥 SAFE SOCKET LOGIC (Prevents 500 Crash)
+    try {
+        const io = req.app.get("io");
+        if (io) {
+            io.to("admins").emit("order:update", order);
+            io.to(`user_${userId}`).emit("order:update", order);
+        }
+    } catch (socketError) {
+        console.error("Socket Notification Failed (Ignored):", socketError.message);
+    }
 
     return res.json({ success: true, message: "Order cancelled successfully", order });
+
   } catch (error) {
     console.error("Cancel Error:", error);
     return res.status(500).json({ success: false, message: error.message });
@@ -147,37 +163,34 @@ export const cancelUserOrder = async (req, res) => {
 ===================================================== */
 export const placeOrderCOD = async (req, res) => {
   try {
-    const userId = req.userId; 
+    const userId = req.userId; // Now correctly set by authUser
     const { items, addressId, guestAddress, courier } = req.body;
 
-    // 1. Basic Validation
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, message: "Cart is empty" });
-    }
+    if (!items || items.length === 0) return res.status(400).json({ success: false, message: "Cart is empty" });
 
     let finalAddressId;
     let customerEmail;
 
-    // 2. Address Logic
+    // --- ADDRESS LOGIC ---
     if (userId) {
-      // --- LOGGED IN USER ---
+      // 🟢 LOGGED IN USER
       if (!addressId) return res.status(400).json({ success: false, message: "Address ID required" });
-      
       const address = await Address.findOne({ _id: addressId, userId: String(userId) });
       if (!address) return res.status(400).json({ success: false, message: "Invalid address" });
-      
       finalAddressId = address._id;
+      // Get email from User model
       const userDoc = await User.findById(userId).lean();
       customerEmail = userDoc?.email;
     } else {
-      // --- GUEST USER ---
+      // 🟡 GUEST USER
       if (!guestAddress) return res.status(400).json({ success: false, message: "Guest details required" });
-      
-      // Create a Guest Address record
-      // NOTE: Ensure your Address Model has 'userId' as required: false
+
+      // 🔥 FIX: Remove _id if frontend sends it, to avoid Duplicate Key Error
+      const { _id, ...cleanAddress } = guestAddress;
+
       const newGuestAddr = await Address.create({
-        ...guestAddress,
-        userId: null, // Use null instead of "GUEST" to avoid ObjectId cast errors
+        ...cleanAddress,
+        userId: null,
         isGuest: true,
       });
       finalAddressId = newGuestAddr._id;
@@ -788,5 +801,55 @@ export const getAllOrders = async (req, res) => {
   } catch (error) {
     console.error("Admin Order Fetch Error:", error);
     return res.json({ success: false, message: error.message });
+  }
+};
+
+export const getPublicOrderDetails = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // Find order and populate product info
+    const order = await Order.findById(orderId)
+      .populate("items.product", "name images price offerPrice")
+      .lean();
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // Return the order data
+    res.json({ success: true, order });
+  } catch (error) {
+    console.error("Public Order Fetch Error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+export const downloadPublicInvoice = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId);
+
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+    
+    // Only allow invoice downloads for paid orders or COD orders that are placed
+    if (order.payment.status !== "paid" && order.payment.method !== "cod") {
+        return res.status(403).json({ success: false, message: "Invoice not available for unpaid orders" });
+    }
+
+    // Generate invoice using your existing service
+    const invoice = await createInvoiceIfNotExists(order);
+    
+    const filePath = path.resolve(invoice.filePath);
+    
+    if (fs.existsSync(filePath)) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=invoice-${order._id.slice(-6)}.pdf`);
+      return res.sendFile(filePath);
+    } else {
+      return res.status(404).json({ success: false, message: "Invoice file not found" });
+    }
+  } catch (error) {
+    console.error("Invoice Download Error:", error);
+    res.status(500).json({ success: false, message: "Could not generate invoice" });
   }
 };

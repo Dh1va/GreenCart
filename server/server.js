@@ -77,6 +77,7 @@ const io = new Server(server, {
     credentials: true,
   },
 });
+app.set("io", io);
 
 // ---------- ROUTES ----------
 app.get("/", (req, res) => res.send("API is working"));

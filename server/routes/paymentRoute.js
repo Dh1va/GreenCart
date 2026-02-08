@@ -4,22 +4,21 @@ import {
   validatePhonePePayment, 
   phonepeCallback 
 } from "../controllers/gateways/phonepeController.js";
-import { createRazorpayPayment, verifyRazorpayPayment } from "../controllers/gateways/razorpayController.js"; // Assuming you have this
-import authUser from "../middleware/authUser.js"; // Your auth middleware
+import { createRazorpayPayment, verifyRazorpayPayment } from "../controllers/gateways/razorpayController.js";
+import authUser from "../middleware/authUser.js"; 
+import { getEnabledGateway } from "../controllers/paymentController.js";
 
 const paymentRouter = express.Router();
 
-// --- PhonePe Routes ---
-paymentRouter.post("/phonepe/create",  createPhonePePayment);
-paymentRouter.post("/phonepe/validate",  validatePhonePePayment);
-paymentRouter.post("/phonepe/callback", phonepeCallback); // No auth, called by PhonePe
+// ✅ FIX: Add authUser to create/validate routes
+paymentRouter.post("/phonepe/create", authUser, createPhonePePayment);
+paymentRouter.post("/phonepe/validate", authUser, validatePhonePePayment);
+paymentRouter.get("/phonepe/callback", phonepeCallback); 
 
-// --- Razorpay Routes ---
-paymentRouter.post("/razorpay/create",  createRazorpayPayment);
-paymentRouter.post("/razorpay/verify",  verifyRazorpayPayment);
+// Razorpay
+paymentRouter.post("/razorpay/create", authUser, createRazorpayPayment);
+paymentRouter.post("/razorpay/verify", authUser, verifyRazorpayPayment);
 
-// --- Settings Route (Used by Checkout.jsx) ---
-import { getEnabledGateway } from "../controllers/paymentController.js";
 paymentRouter.get("/enabled", getEnabledGateway);
 
 export default paymentRouter;

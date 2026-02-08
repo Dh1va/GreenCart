@@ -2,9 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
-import Testimonials from "../components/Testimonials";
+import Testimonials from "../components/Testimonials"; // Import Testimonials
 import {
-  Star,
   ShoppingCart,
   Truck,
   RotateCcw,
@@ -95,7 +94,7 @@ const ProductDetails = () => {
   };
 
   return (
-    <div className="pt-6 pb-20 bg-white overflow-x-hidden">
+    <div className="pt-6 pb-10 bg-white overflow-x-hidden">
       <div className="container mx-auto px-4 md:px-8 lg:px-16">
         {/* --- Breadcrumbs --- */}
         <div className="flex items-center flex-wrap gap-2 text-xs text-gray-500 mb-8">
@@ -149,29 +148,35 @@ const ProductDetails = () => {
               <CheckCircle className="w-4 h-4" /> In stock!
             </div>
 
-            {/* --- CONTROLS SECTION --- */}
+            {/* --- RESPONSIVE CONTROLS SECTION --- */}
             <div className="pt-2">
-              <div className="flex flex-wrap sm:flex-nowrap gap-3 mb-4">
-                {/* Quantity */}
-                <div className="flex items-center bg-gray-100 rounded-lg h-12 w-32 px-2 flex-shrink-0">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-8 h-full flex items-center justify-center hover:text-[#008779]"><Minus className="w-3.5 h-3.5" /></button>
-                  <input className="w-full bg-transparent text-center font-bold text-[#1E2A5E] outline-none" value={quantity} readOnly />
-                  <button onClick={() => setQuantity(quantity + 1)} className="w-8 h-full flex items-center justify-center hover:text-[#008779]"><Plus className="w-3.5 h-3.5" /></button>
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                {/* Quantity & Wishlist (Mobile Row) */}
+                <div className="flex gap-3 w-full sm:w-auto">
+                  <div className="flex items-center bg-gray-100 rounded-lg h-12 flex-1 sm:w-32 sm:flex-none px-2">
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-full flex items-center justify-center hover:text-[#008779]"><Minus className="w-4 h-4" /></button>
+                    <input className="w-full bg-transparent text-center font-bold text-[#1E2A5E] outline-none" value={quantity} readOnly />
+                    <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-full flex items-center justify-center hover:text-[#008779]"><Plus className="w-4 h-4" /></button>
+                  </div>
+                  
+                  {/* Mobile Wishlist Button */}
+                  <button onClick={() => addToWishlist(product._id)} className={`w-12 h-12 rounded-lg border border-gray-200 flex sm:hidden items-center justify-center transition-colors ${wishlist && wishlist.includes(product._id) ? "bg-red-50 text-red-500 border-red-200" : "text-[#1E2A5E] hover:bg-gray-50"}`}>
+                    <Heart className={`w-5 h-5 ${wishlist && wishlist.includes(product._id) ? "fill-current" : ""}`} />
+                  </button>
                 </div>
 
                 {/* Add to Cart */}
-                <button onClick={() => addToCart(product._id, quantity)} className="flex-1 bg-[#008779] text-white font-bold rounded-lg h-12 flex items-center justify-center gap-2 hover:bg-[#007065] transition-colors shadow-sm">
+                <button onClick={() => addToCart(product._id, quantity)} className="flex-1 bg-[#008779] text-white font-bold rounded-lg h-auto py-4 flex items-center justify-center gap-2 hover:bg-[#007065] transition-all active:scale-95 shadow-sm">
                   <ShoppingCart className="w-4 h-4" /> Add to Cart
                 </button>
 
-                {/* Wishlist Button */}
-                <button onClick={() => addToWishlist(product._id)} className={`w-12 h-12 rounded-full border border-gray-200 flex-shrink-0 flex items-center justify-center transition-colors ${wishlist && wishlist.includes(product._id) ? "bg-red-50 text-red-500 border-red-200" : "text-[#1E2A5E] hover:bg-gray-50"}`}>
+                {/* Desktop Wishlist Button */}
+                <button onClick={() => addToWishlist(product._id)} className={`w-12 h-12 rounded-full border border-gray-200 hidden sm:flex items-center justify-center transition-colors ${wishlist && wishlist.includes(product._id) ? "bg-red-50 text-red-500 border-red-200" : "text-[#1E2A5E] hover:bg-gray-50"}`}>
                   <Heart className={`w-5 h-5 ${wishlist && wishlist.includes(product._id) ? "fill-current" : ""}`} />
                 </button>
               </div>
 
-              {/* Buy Now Button (Always Active for guests) */}
-              <button onClick={handleBuyNow} className="w-full h-12 rounded-lg font-bold text-sm uppercase tracking-wide mb-8 transition-all bg-[#1E2A5E] text-white hover:bg-[#151f42] shadow-md">
+              <button onClick={handleBuyNow} className="w-full h-12 rounded-lg font-bold text-sm uppercase tracking-wide mb-8 transition-all bg-[#1E2A5E] text-white hover:bg-[#151f42] active:scale-[0.98] shadow-md">
                 Buy it now
               </button>
 
@@ -217,11 +222,6 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* --- REVIEWS SECTION --- */}
-        <div className="mt-20 border-t border-gray-100 pt-10">
-          <Testimonials />
-        </div>
-
         {/* --- RELATED PRODUCTS --- */}
         {relatedProducts.length > 0 && (
           <div className="mt-20 mb-10">
@@ -237,6 +237,8 @@ const ProductDetails = () => {
           </div>
         )}
       </div>
+
+     
     </div>
   );
 };

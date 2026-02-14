@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeft } from 'lucide-react'; // 👈 Import Back Icon
+import { ArrowLeft } from 'lucide-react'; 
 
 const AddCategoryGroup = () => {
     const { axios } = useAppContext();
     const navigate = useNavigate();
-    const { id } = useParams(); // 👈 Get ID from URL to check if we are editing
+    const { id } = useParams(); 
     
     const [name, setName] = useState('');
     const [order, setOrder] = useState(0);
@@ -73,7 +73,7 @@ const AddCategoryGroup = () => {
         <form onSubmit={onSubmitHandler} className="min-h-screen bg-gray-100 pb-20 p-6 md:p-8 font-sans">
             <div className="max-w-4xl mx-auto">
                 
-                {/* 👇 Back Button */}
+                {/*  Back Button */}
                 <button 
                     type="button" 
                     onClick={() => navigate('/admin/category-groups')} 

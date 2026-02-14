@@ -27,7 +27,7 @@ const OrderSuccess = () => {
 
   const handleDownloadInvoice = () => {
     try {
-      // Use the public invoice endpoint
+      // public invoice endpoint
       const downloadUrl = `${import.meta.env.VITE_BACKEND_URL}/api/order/public/invoice/${orderId}`;
       window.open(downloadUrl, '_blank');
       toast.success("Downloading invoice...");

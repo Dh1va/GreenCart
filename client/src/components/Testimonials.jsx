@@ -26,17 +26,25 @@ const CustomStar = () => (
 
 const Testimonials = () => {
   return (
-    <section className="w-full py-20 bg-[#F8FAFC] overflow-hidden">
-      <div className="container mx-auto px-4 md:px-8">
+    <section className="w-full py-16 bg-[#ECF2FE] overflow-hidden">
+      <div className="px-4 md:px-4 lg:px-4 xl:px-12 2xl:px-40">
         
         <div className="text-center mb-12 space-y-3">
-          <h2 className="text-3xl md:text-5xl font-bold text-[#1E2A5E]">Reviews</h2>
-          <p className="text-[#1E2A5E] text-md my-8 font-medium">What do people think about us?</p>
+          <h2 className="text-4xl md:text-[44px] font-semibold text-[#16255C]">Reviews</h2>
+          <p className="text-[#16255C] text-md font-medium">What do people think about us?</p>
         </div>
 
         <div className="relative w-full">
+          {/* CRITICAL FIX: The .swiper-wrapper must be flex to force children to equal height */}
           <style>
             {`
+              .testimonials-swiper .swiper-wrapper {
+                display: flex !important;
+              }
+              .testimonials-swiper .swiper-slide {
+                height: auto !important;
+                display: flex !important;
+              }
               .review-pagination .swiper-pagination-bullet {
                 background-color: #CBD5E0 !important;
                 opacity: 1;
@@ -46,8 +54,7 @@ const Testimonials = () => {
                 transition: all 0.3s ease;
               }
               .review-pagination .swiper-pagination-bullet-active {
-                background-color: #1E2A5E !important;
-                
+                background-color: #16255C !important;
               }
             `}
           </style>
@@ -61,43 +68,38 @@ const Testimonials = () => {
             pagination={{ el: ".review-pagination", clickable: true }}
             navigation={{ nextEl: ".rev-next", prevEl: ".rev-prev" }}
             breakpoints={{
-              640: { slidesPerView: 2, slidesPerGroup: 2 },
-              1024: { slidesPerView: 4, slidesPerGroup: 4 },
+              640: { slidesPerView: 2 },
+              1024: { slidesPerView: 4 },
             }}
-            className="pb-16"
+            className="pb-16 testimonials-swiper"
           >
             {reviews.map((review) => (
               <SwiperSlide key={review.id}>
-                {/* - aspect-square: Forces a 1:1 ratio
-                  - group/item: Used to trigger hover on child heading
-                */}
-                <div className="group/item bg-white p-8 border border-gray-200 rounded-3xl aspect-square w-full flex flex-col justify-between">
-                  
+                {/* h-full is mandatory here */}
+                <div className="group/item bg-white p-6 border border-gray-200 rounded-3xl w-full h-full flex flex-col justify-between shadow-sm">
                   <div>
-                    <div className="flex gap-1 mb-6">
+                    <div className="flex gap-1 mb-4">
                       {[...Array(5)].map((_, i) => <CustomStar key={i} />)}
                     </div>
 
-                    {/* Heading: 20px, Medium Weight, Blue-ish color, Hover Underline & Color Change */}
-                    <h3 className="text-[#1E2A5E] font-medium leading-tight mb-3 transition-colors duration-300 group-hover/item:text-[#00838f] group-hover/item:underline" 
+                    <h3 className="text-[#16255C] font-semibold leading-tight mb-3 transition-colors duration-300 group-hover/item:text-[#00838f] group-hover/item:underline" 
                         style={{ fontSize: '20px' }}>
                       {review.title}
                     </h3>
 
-                    {/* Text: 15px, Same color as Heading */}
-                    <p className="text-[#1E2A5E] leading-relaxed line-clamp-3 opacity-90" 
+                    <p className="text-[#16255C] font-medium leading-relaxed" 
                        style={{ fontSize: '15px' }}>
                       {review.text}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
-                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center font-bold text-[#1E2A5E] shrink-0">
+                  <div className="flex items-center gap-4 mt-8 pt-4 border-t border-gray-100">
+                    <div className="w-10 h-10 rounded-lg bg-[#ECF2FE] flex items-center justify-center font-bold text-[#16255C] shrink-0">
                       {review.name.charAt(0)}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-[#1E2A5E] font-bold text-sm leading-none truncate">— {review.name}</h4>
-                      <p className="text-gray-500 text-[12px] mt-1 truncate">{review.role}</p>
+                      <h4 className="text-[#16255C] font-bold text-sm leading-none truncate">— {review.name}</h4>
+                      <p className="text-[#16255C] text-[12px] mt-1 truncate">{review.role}</p>
                     </div>
                   </div>
                 </div>
@@ -106,11 +108,11 @@ const Testimonials = () => {
           </Swiper>
 
           <div className="flex items-center justify-center gap-10 mt-8">
-            <button className="rev-prev text-[#CBD5E0] cursor-pointer hover:text-[#1E2A5E] transition-colors">
+            <button className="hidden md:inline rev-prev text-[#CBD5E0] cursor-pointer hover:text-[#16255C] transition-colors">
               <ChevronLeft size={26} />
             </button>
             <div className="review-pagination !static !w-auto flex items-center"></div>
-            <button className="rev-next text-[#CBD5E0] cursor-pointer hover:text-[#1E2A5E] transition-colors">
+            <button className="hidden md:inline rev-next text-[#CBD5E0] cursor-pointer hover:text-[#16255C] transition-colors">
               <ChevronRight size={26} />
             </button>
           </div>

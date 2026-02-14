@@ -34,7 +34,7 @@ const AllProducts = () => {
     }
   }, [searchQuery, categories]);
 
-  // 2. Reset Page on Filter Change (CRITICAL UX STEP)
+  // 2. Reset Page on Filter Change 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedCategories, sortType]);
@@ -228,7 +228,7 @@ const AllProducts = () => {
             </div>
           </div>
 
-          {/* Product Grid (Mapped from currentProducts, not processedProducts) */}
+          {/* Product Grid (Mapped from currentProducts) */}
           {currentProducts.length > 0 ? (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 gap-y-10">

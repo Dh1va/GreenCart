@@ -13,11 +13,11 @@ const AddProduct = () => {
   const [fetching, setFetching] = useState(!!id);
   const [categories, setCategories] = useState([]);
 
-  // Core Data
+ 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   
-  // CHANGED: Initialize as array for multi-category support
+  // Initialize as array for multi-category support
   const [category, setCategory] = useState([]); 
   const [brand, setBrand] = useState("");
 
@@ -62,7 +62,7 @@ const AddProduct = () => {
                 : p.description || ""
             );
 
-            // CHANGED: Handle array vs legacy string data
+            //  Handle array vs legacy string data
             if (Array.isArray(p.category)) {
               setCategory(p.category);
             } else if (p.category) {
@@ -98,7 +98,7 @@ const AddProduct = () => {
 
   // --- HANDLERS ---
   
-  // NEW: Handle adding category from dropdown
+  //  Handle adding category from dropdown
   const handleAddCategory = (e) => {
     const selected = e.target.value;
     if (selected && !category.includes(selected)) {
@@ -106,7 +106,7 @@ const AddProduct = () => {
     }
   };
 
-  // NEW: Handle removing category chip
+  // Handle removing category chip
   const handleRemoveCategory = (catToRemove) => {
     setCategory(category.filter((c) => c !== catToRemove));
   };
@@ -156,7 +156,7 @@ const AddProduct = () => {
     if (type === "color") setColors(colors.filter((c) => c !== item));
   };
 
-  // --- VALIDATION & SUBMIT ---
+  //  VALIDATION & SUBMIT 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
@@ -168,7 +168,7 @@ const AddProduct = () => {
     if (offerPrice && Number(offerPrice) > Number(price)) {
       return toast.error("Offer price cannot be higher than regular price");
     }
-    // Optional: Ensure at least one category is selected
+    //  Ensure at least one category is selected
     if (category.length === 0) {
         return toast.error("Please select at least one category");
     }
@@ -182,7 +182,7 @@ const AddProduct = () => {
       const productData = {
         id,
         name,
-        category, // This is now an array
+        category, 
         brand,
         price,
         offerPrice,

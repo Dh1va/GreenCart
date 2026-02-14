@@ -44,7 +44,7 @@ const ManageCategory = () => {
   useEffect(() => {
     const cat = categories.find((c) => c._id === id);
     if (cat) {
-      // ✅ FIX: Safely handle groupId which can be null, object, or string
+      //  Safely handle groupId which can be null, object, or string
       let safeGroupId = "";
       if (cat.groupId) {
           safeGroupId = typeof cat.groupId === "object" ? cat.groupId._id : cat.groupId;

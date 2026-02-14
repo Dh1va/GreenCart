@@ -33,16 +33,13 @@ import adminSettingsRoute from "./routes/adminSettingsRoute.js";
 import paymentRoute from "./routes/paymentRoute.js";
 import publicSettingsRoute from "./routes/publicSettingsRoute.js";
 
-// ---------- INIT ----------
 const app = express();
 const server = http.createServer(app);
 const port = process.env.PORT || 4000;
 
-// ---------- DB ----------
 await connectDB();
 await connectCloudinary();
 
-// ---------- MIDDLEWARE ----------
 app.use(express.json());
 app.use(cookieParser());
 
@@ -69,8 +66,6 @@ app.use(
   })
 );
 
-
-// ---------- SOCKET ----------
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -79,7 +74,6 @@ const io = new Server(server, {
 });
 app.set("io", io);
 
-// ---------- ROUTES ----------
 app.get("/", (req, res) => res.send("API is working"));
 
 app.use("/api/auth", authRouter);
@@ -103,14 +97,9 @@ app.use("/api/admin", adminSettingsRoute);
 app.use("/api/payments", paymentRoute);
 app.use("/api/settings", publicSettingsRoute);
 
-
-
-
-// ---------- CRON ----------
 startOtpCleanup();
 startOrderCleanup();
 
-// ---------- START ----------
 server.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });

@@ -154,7 +154,7 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              {/* Added [&::-webkit-scrollbar]:hidden to hide scrollbar */}
+             
               <div className="overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden">
                 {recentOrders.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-slate-400 text-sm">
@@ -253,7 +253,7 @@ const KpiCard = ({ title, value, icon, trend, color }) => {
 
   if (isNegative) {
     trendColor = "text-rose-600 bg-rose-50";
-    trendIcon = ""; // Minus sign is already in the number
+    trendIcon = ""; 
   } else if (isNeutral) {
     trendColor = "text-slate-600 bg-slate-100";
     trendIcon = "";

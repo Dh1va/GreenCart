@@ -36,7 +36,6 @@ export const getOrdersByUserAdmin = async (req, res) => {
   res.json({ success: true, orders });
 };
 
-// List Users
 export const listUsers = async (req, res) => {
   try {
     const users = await User.find({ role: { $ne: "admin" } })

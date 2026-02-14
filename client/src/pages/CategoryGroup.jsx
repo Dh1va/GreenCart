@@ -91,7 +91,7 @@ const CategoryGroup = () => {
                   {/* Dark Gradient Overlay (Bottom) */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300"></div>
 
-                  {/* Content Box (Glassmorphism Style) */}
+                  {/* Content Box */}
                   <div className="absolute bottom-0 left-0 right-0 p-5">
                     <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl flex items-center justify-between group-hover:bg-white transition-all duration-300">
                       

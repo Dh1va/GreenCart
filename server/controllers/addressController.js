@@ -1,7 +1,5 @@
 import Address from "../models/Address.js";
 
-
-//add Address : /api/address/add
 export const addAddress = async (req, res) => {
   try {
     const userId = req.userId;

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
-import Testimonials from "../components/Testimonials"; // Import Testimonials
+
 import {
   ShoppingCart,
   Truck,
@@ -148,7 +148,7 @@ const ProductDetails = () => {
               <CheckCircle className="w-4 h-4" /> In stock!
             </div>
 
-            {/* --- RESPONSIVE CONTROLS SECTION --- */}
+            {/* ---  CONTROLS SECTION --- */}
             <div className="pt-2">
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
                 {/* Quantity & Wishlist (Mobile Row) */}

@@ -22,7 +22,7 @@ const AdminLayout = () => {
     { name: "Settings", path: "/admin/settings", icon: Settings },
   ];
 
-  // ✅ CRITICAL FIX: Auth Guard for EC2
+  // ✅  Auth Guard for EC2
   useEffect(() => {
     if (authChecked) {
       if (!user || user.role !== "admin") {

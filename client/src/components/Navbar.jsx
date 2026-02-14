@@ -193,7 +193,7 @@ const Navbar = () => {
   return (
     <>
       <nav className="sticky top-0 w-full z-[100] bg-white/60 backdrop-blur-xl border-b border-gray-100/50 shadow-sm transition-all duration-300">
-        <div className="relative px-4 md:px-12 lg:px-12 xl:px-24 h-[60px] flex items-center justify-between">
+       <div className="relative px-4 md:px-4 lg:px-4 xl:px-12 2xl:px-40 h-[60px] flex items-center justify-between">
           {/* MOBILE HEADER (Left: Menu, Center: Logo, Right: Icons) */}
           <div className="flex lg:hidden items-center justify-between w-full h-full">
             <button
@@ -205,12 +205,11 @@ const Navbar = () => {
 
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
               <NavLink to={"/"} onClick={closeMobileMenu}>
-                <motion.img
+                <img
                   className="h-7 w-auto object-contain"
                   src={assets.logo}
                   alt="logo"
-                  whileHover={{ scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                 
                 />
               </NavLink>
             </div>
@@ -237,12 +236,11 @@ const Navbar = () => {
           {/* DESKTOP HEADER (Preserved Logic) */}
           <div className="hidden lg:flex items-center gap-8 xl:gap-12">
             <NavLink to={"/"} onClick={closeMobileMenu}>
-              <motion.img
+              <img
                 className="h-8 sm:h-10 w-auto object-contain"
                 src={assets.logo}
                 alt="logo"
-                whileHover={{ scale: 0.9 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+               
               />
             </NavLink>
 

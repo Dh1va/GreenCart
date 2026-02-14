@@ -257,8 +257,7 @@ const Checkout = () => {
   const shippingFee = selectedCourier?.price || 0;
   const totalAmount = subtotalValue + taxAmount + shippingFee - discount;
 
-  // ❌ REMOVED FormField from here
-  // We are now using the one defined at the bottom
+  
 
   return (
     <div className="min-h-screen  pt-6 md:pt-10 pb-20 antialiased">
@@ -295,7 +294,7 @@ const Checkout = () => {
 
               <div className="p-6 md:p-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                  {/* ✅ UPDATED: Passing props to FormField */}
+                 
                   <FormField label="First Name" name="firstName" value={selectedAddress?.firstName} icon={UserIcon} isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
                   <FormField label="Last Name" name="lastName" value={selectedAddress?.lastName} isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
                   <FormField label="Email" name="email" value={selectedAddress?.email} icon={Mail} isEditing={isEditing} editFormData={editFormData} handleInputChange={handleInputChange} user={user} />
@@ -436,7 +435,7 @@ const Checkout = () => {
   );
 };
 
-// ✅ MOVED OUTSIDE: This prevents it from re-rendering on every keystroke
+
 const FormField = ({ label, name, value, icon: Icon, fullWidth, type = "text", isEditing, editFormData, handleInputChange, user }) => (
   <div className={`flex flex-col ${fullWidth ? 'md:col-span-2' : ''}`}>
     <label className="text-[11px] uppercase text-slate-400 font-bold mb-1.5 tracking-wider flex items-center gap-2">

@@ -46,7 +46,7 @@ const Profile = () => {
     
     setIsSaving(true);
     try {
-      // Note: Ensure you updated your backend route to point to updateBasicInfo
+      
       const { data } = await axios.put("/api/profile/basic", formData);
       if (data.success) {
         toast.success("Profile updated successfully");

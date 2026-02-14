@@ -334,7 +334,7 @@ const Reports = () => {
           </div>
         </Card>
 
-        {/* Top Products (Spans 3 cols on mobile, 1 on LG if you want, but here I'll put it in a separate full-width section usually, but let's fit it in the grid or make it full width below) */}
+       
       </div>
         
       {/* FULL WIDTH TOP PRODUCTS */}

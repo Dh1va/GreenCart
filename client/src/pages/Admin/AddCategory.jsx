@@ -23,7 +23,7 @@ const AddCategory = () => {
                 const { data } = await axios.get('/api/category-group/list');
                 if (data.success) {
                     setGroups(data.groups);
-                    // Removed auto-select first group logic to default to "None"
+                   
                 }
             } catch (error) {
                 toast.error("Failed to load groups");
@@ -117,9 +117,9 @@ const AddCategory = () => {
                             value={groupId} 
                             onChange={(e) => setGroupId(e.target.value)} 
                             className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
-                            // Removed 'required' attribute
+                           
                         >
-                            <option value="">None (Ungrouped)</option> {/* Added None option */}
+                            <option value="">None (Ungrouped)</option> {/*  None option */}
                             {groups.map(g => (
                                 <option key={g._id} value={g._id}>{g.name}</option>
                             ))}

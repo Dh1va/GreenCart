@@ -24,7 +24,7 @@ const CreateOrder = () => {
   const [loading, setLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   
-  // ✅ NEW: Settings State
+  //  Settings State
   const [taxRate, setTaxRate] = useState(0); 
 
   // Search State

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Edit, ArrowLeft } from 'lucide-react';  // 👈 Added Edit & ArrowLeft icons
+import { Trash2, Plus, Edit, ArrowLeft } from 'lucide-react';  
 
 const CategoryGroupList = () => {
     const { axios } = useAppContext();
@@ -42,7 +42,7 @@ const CategoryGroupList = () => {
         <div className="flex-1 h-screen overflow-hidden flex flex-col bg-gray-100 font-sans">
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
                 
-                {/* 👇 Back Button added here */}
+                {/*  Back Button  */}
                 <button 
                     onClick={() => navigate('/admin/categories')} 
                     className="mb-6 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
@@ -84,7 +84,7 @@ const CategoryGroupList = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-3">
-                                            {/* 👇 Edit Button */}
+                                            {/* Edit Button */}
                                             <button 
                                                 onClick={() => navigate(`/admin/category-groups/edit/${group._id}`)} 
                                                 className="text-gray-400 hover:text-indigo-600 transition-colors"

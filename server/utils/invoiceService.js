@@ -43,7 +43,6 @@ export const createInvoiceIfNotExists = async (orderDoc) => {
   // generatePDF returns Uint8Array in your case
   const pdfRaw = await generatePDF(invoiceTemplate, data);
 
-  // ✅ FIX: Always convert to Buffer before saving in Mongo
   const pdfBuffer = Buffer.isBuffer(pdfRaw) ? pdfRaw : Buffer.from(pdfRaw);
 
   const invoice = await Invoice.create({

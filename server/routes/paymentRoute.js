@@ -10,12 +10,10 @@ import { getEnabledGateway } from "../controllers/paymentController.js";
 
 const paymentRouter = express.Router();
 
-// ✅ FIX: Add authUser to create/validate routes
 paymentRouter.post("/phonepe/create", authUser, createPhonePePayment);
 paymentRouter.post("/phonepe/validate", authUser, validatePhonePePayment);
 paymentRouter.get("/phonepe/callback", phonepeCallback); 
 
-// Razorpay
 paymentRouter.post("/razorpay/create", authUser, createRazorpayPayment);
 paymentRouter.post("/razorpay/verify", authUser, verifyRazorpayPayment);
 

@@ -31,14 +31,16 @@ const ShopByCategory = () => {
   if (!categories || categories.length === 0) return null;
 
   return (
-    <section className="md:pt-20 pt-10 md:pb-10 overflow-hidden"> {/* Added overflow-hidden to prevent any slide spillover */}
-      <div className="container mx-auto px-4 md:px-8">
+    <section className=" mt-20  overflow-hidden bg-white">
+      
+      <div className="">
+        
         {/* --- Header Section --- */}
         <div className="text-center mb-12 space-y-3">
-          <h2 className="text-3xl md:text-5xl font-bold text-[#1E2A5E]">
+          <h2 className="text-3xl md:text-4xl font-bold text-[#16255C]">
             Shop by Category
           </h2>
-          <p className="text-[#1E2A5E] text-md font-medium">
+          <p className="text-[#16255C] text-md font-medium">
             Find the perfect book for every interest and passion
           </p>
         </div>
@@ -47,7 +49,6 @@ const ShopByCategory = () => {
         <div className="relative w-full">
           <style>
             {`
-              /* Strips Swiper default positioning that causes layout overflow */
               .category-swiper-pagination {
                 position: static !important;
                 width: auto !important;
@@ -65,8 +66,9 @@ const ShopByCategory = () => {
                 border-radius: 50%;
               }
               .category-swiper-pagination .swiper-pagination-bullet-active {
-                background-color: #1E2A5E !important;
-                
+                background-color: #16255C !important;
+                width: 7px;
+                height: 7px;
               }
             `}
           </style>
@@ -86,27 +88,27 @@ const ShopByCategory = () => {
               prevEl: ".cat-prev",
             }}
             breakpoints={{
-              640: { slidesPerView: 3, slidesPerGroup: 3 },
-              1024: { slidesPerView: 4, slidesPerGroup: 4 },
-              1280: { slidesPerView: 5, slidesPerGroup: 5 },
+              640: { slidesPerView: 3, slidesPerGroup: 1 },
+              1024: { slidesPerView: 4, slidesPerGroup: 1 },
+              1280: { slidesPerView: 5, slidesPerGroup: 1 },
             }}
             className="w-full"
           >
             {categories.map((cat) => (
-              <SwiperSlide key={cat._id} className="py-4">
+              <SwiperSlide key={cat._id} className="">
                 <div
                   onClick={() => handleCategoryClick(cat.name)}
-                  className="relative group/card cursor-pointer aspect-[4/5] md:aspect-[4/5] rounded-[24px] overflow-hidden bg-white"
+                  className="relative group/card cursor-pointer aspect-[125/173] lg:aspect-[304/405] rounded-[24px] overflow-hidden bg-white"
                 >
                   <img
                     src={cat.image || "https://placehold.co/600x800?text=No+Image"}
                     alt={cat.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
                   <div className="absolute bottom-4 left-4 right-4">
-                    <div className="bg-[#1E2A5E] text-white group-hover/card:bg-white group-hover/card:text-[#1E2A5E] text-center py-3 rounded-xl transition-all duration-300">
-                      <span className="text-sm md:text-lg font-bold block truncate px-2">
+                    <div className="bg-[#16255C] text-white group-hover/card:bg-white group-hover/card:text-[#16255C] text-center py-3 rounded-xl transition-all duration-300 shadow-lg">
+                      <span className="text-lg md:text-xl font-bold block  px-2">
                         {cat.name}
                       </span>
                     </div>
@@ -116,16 +118,15 @@ const ShopByCategory = () => {
             ))}
           </Swiper>
 
-          {/* --- Navigation Controls (Clean & Centered) --- */}
+          {/* --- Navigation Controls --- */}
           <div className="flex items-center justify-center gap-4 mt-8">
-            <button className="cat-prev w-10 h-10 flex items-center justify-center text-[#CBD5E0] hover:text-[#1E2A5E]  transition-all cursor-pointer  disabled:opacity-30">
+            <button className="hidden md:flex cat-prev w-10 h-10 items-center justify-center text-[#CBD5E0] hover:text-[#16255C] transition-all cursor-pointer">
               <ChevronLeft className="w-6 h-6" />
             </button>
 
-            {/* Pagination is now strictly contained in the flex gap */}
             <div className="category-swiper-pagination"></div>
 
-            <button className="cat-next w-10 h-10 flex items-center justify-center  text-[#CBD5E0] hover:text-[#1E2A5E]  transition-all cursor-pointer  disabled:opacity-30">
+            <button className="hidden md:flex cat-next w-10 h-10 items-center justify-center text-[#CBD5E0] hover:text-[#16255C] transition-all cursor-pointer">
               <ChevronRight className="w-6 h-6" />
             </button>
           </div>

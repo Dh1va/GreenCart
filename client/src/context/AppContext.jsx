@@ -38,7 +38,7 @@ export const AppContextProvider = ({ children }) => {
   });
 
   /* ============================
-     🔒 CACHE FLAGS (NEW)
+     🔒 CACHE FLAGS 
   ============================ */
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [usersLoaded, setUsersLoaded] = useState(false);
@@ -46,9 +46,7 @@ export const AppContextProvider = ({ children }) => {
   const [couriersLoaded, setCouriersLoaded] = useState(false);
   const [invoicesLoaded, setInvoicesLoaded] = useState(false);
 
-  /* ============================
-     EXISTING FUNCTIONS 
-  ============================ */
+ 
   const fetchUser = async () => {
     try {
       const { data } = await axios.get("/api/user/is-auth");
@@ -321,7 +319,6 @@ export const AppContextProvider = ({ children }) => {
 
   /* ============================
      🆕 FETCH-ONCE FUNCTIONS
-     (NO EXISTING CODE TOUCHED)
   ============================ */
 
   const fetchCategoriesOnce = async (force = false) => {
@@ -399,7 +396,7 @@ export const AppContextProvider = ({ children }) => {
   };
 
   /* ============================
-     SOCKET (UNCHANGED)
+     SOCKET 
   ============================ */
   useEffect(() => {
     socket.connect();
@@ -420,7 +417,7 @@ export const AppContextProvider = ({ children }) => {
   }, []);
 
   /* ============================
-     PRODUCTS (UNCHANGED)
+     PRODUCTS
   ============================ */
   const fetchProducts = async () => {
     try {
@@ -453,8 +450,9 @@ export const AppContextProvider = ({ children }) => {
   const invalidateUsers = () => setUsersLoaded(false);
   const invalidateCoupons = () => setCouponsLoaded(false);
   const invalidateCouriers = () => setCouriersLoaded(false);
+  
   /* ============================
-     CONTEXT VALUE (ONLY APPENDED)
+     CONTEXT VALUE 
   ============================ */
   const value = {
     navigate,

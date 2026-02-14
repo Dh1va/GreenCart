@@ -11,10 +11,8 @@ import adminOnly from "../middleware/adminOnly.js";
 
 const adminUserRouter = express.Router();
 
-// ⚠️ static routes FIRST
 adminUserRouter.get("/user/:userId", authUser, adminOnly, getOrdersByUserAdmin);
 
-// dynamic routes AFTER
 adminUserRouter.get("/:userId/details", authUser, adminOnly, getUserWithAddresses);
 
 adminUserRouter.get("/users", authUser, adminOnly, listUsers);

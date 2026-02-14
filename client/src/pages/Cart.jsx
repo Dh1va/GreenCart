@@ -37,7 +37,7 @@ const Cart = () => {
   };
 
   const handleCheckout = () => {
-    navigate("/checkout"); // Guest can now proceed
+    navigate("/checkout"); // Guest can proceed
   };
 
   const subtotal = getCartAmount();

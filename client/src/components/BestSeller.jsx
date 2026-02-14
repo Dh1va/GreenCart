@@ -14,54 +14,50 @@ const BestSeller = () => {
     return product.category === "New & Trending";
   });
 
-  // ✅ KEEP 10 ITEMS: This ensures we have enough products for 2 rows
   const displayProducts =
     trendingProducts.length > 0
       ? trendingProducts.slice(0, 10)
       : products.slice(0, 10);
 
   return (
-    <section className="pt-10 md:pt-20 md:pb-10 mb-10 bg-white">
-      <div className="container pt-10 mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="text-center mb-8 sm:mb-12 space-y-2">
-          <h2 className="text-3xl md:text-5xl font-bold text-[#1E2A5E]">
+    <section className="pt-10 md:pt-10 md:pb-10 mb-10 bg-white">
+      {/* Updated padding and removed 'container mx-auto' to match Navbar/Footer exactly */}
+      <div className=" pt-10">
+        
+        <div className="text-center mb-12 space-y-3">
+          <h2 className="text-4xl md:text-[44px] font-semibold text-[#16255C]">
             New & Trending
           </h2>
-          <p className="text-[#1E2A5E] text-md my-8 font-medium">
+          <p className="text-[#16255C] text-md">
             Fresh arrivals this season
           </p>
         </div>
 
-        {/* ✅ MOBILE OPTIMIZED GRID:
-            - grid-cols-2: Mobile (Max width cards)
-            - gap-3: Tighter gaps for mobile images
-        */}
+        {/* Updated grid gaps and alignment */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 gap-y-8 sm:gap-y-10">
           {displayProducts.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}
         </div>
 
-        <div className="mt-12 sm:mt-16 text-center px-4">
+        <div className="mt-12 sm:mt-16 text-center">
           <button
             onClick={() => {
               navigate("/products");
               window.scrollTo(0, 0);
             }}
-            /* Added 'group' for hover targeting and 'relative/overflow-hidden' for the slide effect */
-            className="group relative w-full sm:w-auto px-10 py-3 h-[48px] rounded-md border-2 border-[#1E2A5E] bg-white text-[#1E2A5E] font-bold text-sm tracking-wide uppercase transition-all duration-300 overflow-hidden"
+            className="group relative w-full sm:w-auto px-10 py-3 h-[48px] rounded-md border-2 border-[#16255C] bg-white text-[#16255C] font-bold text-sm tracking-wide uppercase transition-all duration-300 overflow-hidden"
           >
-            {/* Layer 1: Initial State (moves UP and out) */}
+            {/* Layer 1: Initial State */}
             <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-in-out group-hover:-translate-y-full">
               <span className="whitespace-nowrap">Shop All Products</span>
             </div>
 
-            {/* Layer 2: Hover State (moves from BOTTOM to center) */}
-            <div className="absolute inset-0 flex items-center justify-center bg-[#1E2A5E] text-white translate-y-full transition-transform duration-500 ease-in-out group-hover:translate-y-0">
+            {/* Layer 2: Hover State */}
+            <div className="absolute inset-0 flex items-center justify-center bg-[#16255C] text-white translate-y-full transition-transform duration-500 ease-in-out group-hover:translate-y-0">
               <span className="whitespace-nowrap">Shop All Products</span>
             </div>
 
-            {/* Invisible Spacer: Maintains the button's width/height automatically */}
             <div className="invisible px-2">Shop All Products</div>
           </button>
         </div>

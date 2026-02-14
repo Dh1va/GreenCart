@@ -33,7 +33,7 @@ const ProductList = () => {
 
     let data = products;
 
-    // 1. Apply Category Filter (UPDATED FOR ARRAY SUPPORT)
+    // 1. Apply Category Filter (FOR ARRAY SUPPORT)
     if (categoryFilter) {
       data = data.filter((p) => {
         if (Array.isArray(p.category)) {

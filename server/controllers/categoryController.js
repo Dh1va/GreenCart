@@ -1,7 +1,6 @@
 import Category from "../models/category.js";
 import { v2 as cloudinary } from "cloudinary";
 
-// Add Category
 export const addCategory = async (req, res) => {
   try {
     const { name, description, groupId } = req.body;
@@ -9,8 +8,6 @@ export const addCategory = async (req, res) => {
 
     if (!name) return res.json({ success: false, message: "Name is required" });
     
-
-    // Check duplicates
     const exists = await Category.findOne({ name });
     if (exists)
       return res.json({ success: false, message: "Category already exists" });
@@ -55,20 +52,6 @@ export const updateCategory = async (req, res) => {
       return res.json({ success: false, message: "Category not found" });
     }
 
-    // Update fields
-    if (name) category.name = name;
-    if (description !== undefined) category.description = description;
-
-    // ✅ Update groupId (required field)
-    if (groupId !== undefined) category.groupId = groupId || null;
-
-    // If new image uploaded, upload to cloudinary and update URL
-    if (imageFile) {
-      const imageUpload = await cloudinary.uploader.upload(imageFile.path, {
-        resource_type: "image",
-      });
-      category.image = imageUpload.secure_url;
-    }
 
     await category.save();
 

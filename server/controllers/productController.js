@@ -1,7 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import Product from '../models/product.js';
 
-// Add Product
 export const addProduct = async (req, res) => {
   try {
     let data = JSON.parse(req.body.productData);
@@ -103,7 +102,6 @@ export const productList = async (req, res) => {
     }
 }
 
-// Get Single Product
 export const productById = async (req, res) => {
     try {
         const { id } = req.body;
@@ -115,7 +113,6 @@ export const productById = async (req, res) => {
     }
 }
 
-//add product to category 
 export const assignCategory = async (req, res) => {
     try {
         const { productId, newCategory } = req.body;

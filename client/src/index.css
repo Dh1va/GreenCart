@@ -23,26 +23,26 @@ html, body {
 @layer utilities {
   /* --- Custom Scrollbar Logic --- */
   
-  /* Width for vertical scrollbars, Height for horizontal */
+  
   ::-webkit-scrollbar {
     width: 5px;
     height: 5px;
   }
 
-  /* The background of the scrollbar (Transparent for a clean look) */
+  
   ::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  /* The moving part of the scrollbar (Your Primary Color) */
+  
   ::-webkit-scrollbar-thumb {
-    background-color: #d1d5db; /* gray-300 (Subtle default) */
+    background-color: #d1d5db; 
     border-radius: 20px;
   }
 
   /* Hover state - makes it darker/active */
   ::-webkit-scrollbar-thumb:hover {
-    background-color: #111827; /* gray-900 (Your Primary Sidebar Color) */
+    background-color: #111827; 
   }
 
   /* Firefox Support */
@@ -83,4 +83,9 @@ html, body {
 
 .animate-slideInRight {
   animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+input::placeholder {
+  color: #1E2A5E;
+  opacity: 1; 
 }

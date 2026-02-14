@@ -59,9 +59,6 @@ const sendOrderPlacedEmailIfEnabled = async ({ userId, order }) => {
   }
 };
 
-/* =====================================================
-   USER: GET ORDER DETAILS
-===================================================== */
 export const getUserOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -86,12 +83,9 @@ export const getUserOrderDetails = async (req, res) => {
   }
 };
 
-/* =====================================================
-   USER: CANCEL ORDER (USES SETTINGS cancelWindowHours)
-===================================================== */
 export const cancelUserOrder = async (req, res) => {
   try {
-    const { orderId, reason } = req.body; // Added 'reason' to body destructuring
+    const { orderId, reason } = req.body;
     const userId = req.userId;
 
     const settings = await getSettingsSafe();
@@ -108,12 +102,10 @@ export const cancelUserOrder = async (req, res) => {
       return res.status(403).json({ success: false, message: "Unauthorized action" });
     }
 
-    // Check: Is it already cancelled?
     if (order.delivery.status === "cancelled") {
         return res.status(400).json({ success: false, message: "Order is already cancelled." });
     }
 
-    // Check: Can it be cancelled? (Only before shipping)
     if (order.delivery.status !== "order_placed" && order.delivery.status !== "processing") {
       return res.status(400).json({
         success: false,
@@ -121,7 +113,6 @@ export const cancelUserOrder = async (req, res) => {
       });
     }
 
-    // Time check
     const orderDate = new Date(order.createdAt);
     const currentDate = new Date();
     const diffInHours = Math.abs(currentDate - orderDate) / 36e5;
@@ -133,13 +124,11 @@ export const cancelUserOrder = async (req, res) => {
       });
     }
 
-    // Update Status
     order.delivery.status = "cancelled";
-    if (reason) order.cancelReason = reason; // Optional: Save reason if your schema supports it
+    if (reason) order.cancelReason = reason;
     
     await order.save();
 
-    // 🔥 SAFE SOCKET LOGIC (Prevents 500 Crash)
     try {
         const io = req.app.get("io");
         if (io) {
@@ -147,7 +136,6 @@ export const cancelUserOrder = async (req, res) => {
             io.to(`user_${userId}`).emit("order:update", order);
         }
     } catch (socketError) {
-        console.error("Socket Notification Failed (Ignored):", socketError.message);
     }
 
     return res.json({ success: true, message: "Order cancelled successfully", order });

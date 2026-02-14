@@ -10,7 +10,7 @@ const Shipping = () => {
   
   const [editingId, setEditingId] = useState(null);
 
-  // ✅ Added trackingPrefix and trackingSequence
+  // trackingPrefix and trackingSequence
   const [form, setForm] = useState({ 
     name: "", 
     price: "", 
@@ -37,7 +37,7 @@ const Shipping = () => {
       minDays: courier.minDays,
       maxDays: courier.maxDays,
       chargePerItem: courier.chargePerItem || false,
-      // ✅ Load existing values
+      //  Load existing values
       trackingPrefix: courier.trackingPrefix || "",
       trackingSequence: courier.trackingSequence || 1000
     });
@@ -156,7 +156,7 @@ const Shipping = () => {
                             </label>
                         </div>
 
-                        {/* ✅ NEW: TRACKING CONFIG SECTION */}
+                        {/* TRACKING CONFIG SECTION */}
                         <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100">
                             <div className="flex items-center gap-2 mb-2">
                                 <Hash className="w-3.5 h-3.5 text-indigo-600" />
@@ -220,7 +220,7 @@ const Shipping = () => {
                 </div>
             </div>
 
-            {/* LIST (Unchanged logic, just display updates) */}
+            {/* LIST ( display updates) */}
             <div className="lg:col-span-2">
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <table className="w-full text-left border-collapse">

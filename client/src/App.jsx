@@ -221,7 +221,7 @@ const App = () => {
           }
         />
 
-        {/* ===================== ADMIN ROUTES (No UserLayout) ===================== */}
+        {/* ===================== ADMIN ROUTES  ===================== */}
         <Route
           path="/admin"
           element={

@@ -27,7 +27,7 @@ const VerifyPhonePe = () => {
         localStorage.removeItem("guest_cart");
         localStorage.removeItem("guest_checkout_address");
 
-        // ✅ REDIRECT LOGIC: Guests vs Registered Users
+        //  REDIRECT LOGIC: Guests vs Registered Users
         setTimeout(() => {
           if (user) {
             navigate('/my-orders');

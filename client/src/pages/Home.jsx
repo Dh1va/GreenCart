@@ -9,7 +9,7 @@ import ShopByCategory from "../components/ShopByCategory";
 
 const Home = () => {
   return (
-    <div className="mt-10">
+    <div>
       <MainBanner />
       {/* <Categories/> */}
       <ShopByCategory />
